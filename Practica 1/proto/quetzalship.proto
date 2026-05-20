@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package quetzalship;
+
+import "google/protobuf/timestamp.proto";
+
+service QuetzalShipService {
+  rpc CreateOrder(CreateOrderRequest) returns (OrderResponse);
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+  rpc GetOrder(GetOrderRequest) returns (OrderResponse);
+  rpc CancelOrder(CancelOrderRequest) returns (OrderResponse);
+  rpc GetReceipt(GetReceiptRequest) returns (ReceiptResponse);
+}
+
+// Enums
+enum Zone {
+  METRO = 0;
+  INTERIOR = 1;
+  FRONTERA = 2;
+}
+
+enum ServiceType {
+  STANDARD = 0;
+  EXPRESS = 1;
+  SAME_DAY = 2;
+}
+
+enum OrderStatus {
+  ACTIVE = 0;
+  CANCELLED = 1;
+}
+
+enum DiscountType {
+  NONE = 0;
+  PERCENT = 1;
+  FIXED = 2;
+}
+
+// Messages
+message Package {
+  double weight_kg = 1;
+  double height_cm = 2;
+  double width_cm = 3;
+  double length_cm = 4;
+  bool fragile = 5;
+  int32 declared_value_q_cents = 6; // En centavos para evitar problemas de punto flotante
+}
+
+message Discount {
+  DiscountType type = 1;
+  double value = 2;
+}
+
+message CreateOrderRequest {
+  Zone origin_zone = 1;
+  Zone destination_zone = 2;
+  ServiceType service_type = 3;
+  repeated Package packages = 4;
+  Discount discount = 5;
+  bool insurance_enabled = 6;
+}
+
+message OrderResponse {
+  string order_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Zone origin_zone = 3;
+  Zone destination_zone = 4;
+  ServiceType service_type = 5;
+  repeated Package packages = 6;
+  Discount discount = 7;
+  bool insurance_enabled = 8;
+  OrderStatus status = 9;
+  Breakdown breakdown = 10;
+  int32 total_cents = 11; // Total en centavos
+}
+
+message Breakdown {
+  double order_billable_kg = 1;
+  int32 base_subtotal_cents = 2;
+  int32 service_subtotal_cents = 3;
+  int32 fragile_surcharge_cents = 4;
+  int32 insurance_surcharge_cents = 5;
+  int32 subtotal_with_surcharges_cents = 6;
+  int32 discount_amount_cents = 7;
+  int32 total_cents = 8;
+}
+
+message ListOrdersRequest {
+  int32 page_size = 1;
+  int32 page_number = 2;
+}
+
+message OrderSummary {
+  string order_id = 1;
+  Zone destination_zone = 2;
+  ServiceType service_type = 3;
+  OrderStatus status = 4;
+  int32 total_cents = 5;
+}
+
+message ListOrdersResponse {
+  repeated OrderSummary orders = 1;
+  int32 total_count = 2;
+}
+
+message GetOrderRequest {
+  string order_id = 1;
+}
+
+message CancelOrderRequest {
+  string order_id = 1;
+}
+
+message GetReceiptRequest {
+  string order_id = 1;
+}
+
+message ReceiptResponse {
+  string order_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Zone origin_zone = 3;
+  Zone destination_zone = 4;
+  ServiceType service_type = 5;
+  OrderStatus status = 6;
+  repeated Package packages = 7;
+  Breakdown breakdown = 8;
+  int32 total_cents = 9;
+}
