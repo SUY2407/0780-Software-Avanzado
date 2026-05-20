@@ -1,0 +1,55 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: kibana-backendconfig
+  namespace: observability
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /api/status
+    port: 5601
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: observability
+  annotations:
+    # Para que GCE Ingress use NEG
+    cloud.google.com/neg: '{"ingress": true}'
+    # Para que el health check sea /api/status en el puerto 5601
+    cloud.google.com/backend-config: '{"ports": {"5601":"kibana-backendconfig"}}'
+spec:
+  selector:
+    app: kibana
+  ports:
+  - name: http
+    port: 5601
+    targetPort: 5601
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:8.11.3
+        ports:
+        - containerPort: 5601
+          name: http
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch:9200"
+        - name: XPACK_SECURITY_ENABLED
+          value: "false"

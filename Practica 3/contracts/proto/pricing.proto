@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package pricing;
+
+// Definición de un paquete individual
+message Package {
+  double weight_kg = 1;
+  double height_cm = 2;
+  double width_cm = 3;
+  double length_cm = 4;
+  bool fragile = 5;
+  double declared_value_q = 6;
+}
+
+// Definición del descuento
+message Discount {
+  string type = 1; // "NONE", "PERCENT", "FIXED"
+  double value = 2;
+}
+
+// Solicitud de cálculo (lo que envía Orders a Pricing)
+message CalculatePriceRequest {
+  string origin_zone = 1;      // METRO, INTERIOR, FRONTERA
+  string destination_zone = 2; 
+  string service_type = 3;     // STANDARD, EXPRESS, SAME_DAY
+  repeated Package packages = 4;
+  Discount discount = 5;
+  bool insurance_enabled = 6;
+}
+
+// El desglose detallado de costos (regla 3.4 del PDF)
+message PriceBreakdown {
+  double base_subtotal = 1;
+  double service_subtotal = 2; // Subtotal tras aplicar multiplicador de servicio
+  double fragile_surcharge = 3;
+  double insurance_surcharge = 4;
+  double subtotal_with_surcharges = 5;
+  double discount_amount = 6;
+  double total = 7;
+}
+
+// Respuesta final de Pricing
+message CalculatePriceResponse {
+  PriceBreakdown breakdown = 1;
+  double total = 2;
+}
+
+service PricingService {
+  rpc CalculatePrice (CalculatePriceRequest) returns (CalculatePriceResponse);
+}

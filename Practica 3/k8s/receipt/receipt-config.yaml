@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: receipt-config
+data:
+  PORT: "3000"
+  DB_HOST: "mssql"
+  DB_PORT: "1433"
+  DB_USER: "sa"
+  DB_NAME: "QuetzalShipDB"

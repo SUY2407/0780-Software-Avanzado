@@ -1,0 +1,421 @@
+services:
+  # ------------------------------------------------
+  # MSSQL (Puerto 1433) - Base de datos principal
+  # ------------------------------------------------
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql-server
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+
+
+  # ------------------------------------------------
+  # MSSQL INIT (Inicializa la base de datos)
+  # ------------------------------------------------
+  mssql-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql-init
+    volumes:
+      - ./database/init:/scripts
+    entrypoint: /bin/bash
+    command: >
+      -c "
+      echo 'Waiting for MSSQL to be ready...';
+      sleep 30;
+      echo 'Executing database initialization scripts...';
+      /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P YourStrong@Passw0rd -C -i /scripts/01-create-database.sql;
+      /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P YourStrong@Passw0rd -C -i /scripts/02-create-tables.sql;
+      echo 'Database initialization completed!';
+      "
+    depends_on:
+      mssql:
+        condition: service_healthy
+    restart: on-failure
+
+
+
+  # ------------------------------------------------
+  # REDIS (Puerto 6379) - Cache para FX
+  # ------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: fx-redis
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+
+
+  # ------------------------------------------------
+  # PRICING (Puerto gRPC 50052) - Sin dependencias
+  # ------------------------------------------------
+  pricing:
+    build:
+      context: .
+      dockerfile: services/pricing/Dockerfile
+      args:
+        SERVICE_NAME: pricing
+    container_name: pricing
+    expose:
+      - "50052"
+    environment:
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+
+
+  # ------------------------------------------------
+  # FX SERVICE (Puerto gRPC 50054) - Depende de Redis
+  # ------------------------------------------------
+  fx-service:
+    build:
+      context: .
+      dockerfile: services/fx-service/Dockerfile
+    container_name: fx-service
+    expose:
+      - "50054"
+    environment:
+      - PORT=50054
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_TTL=3600
+      - PROVIDER_TIMEOUT=5000
+      - MAX_RETRIES=3
+      - RETRY_DELAY=1000
+      - CIRCUIT_BREAKER_THRESHOLD=5
+      - CIRCUIT_BREAKER_TIMEOUT=60000
+    healthcheck:
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50054"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - elk
+
+    restart: unless-stopped
+
+
+  # ------------------------------------------------
+  # RECEIPT (Puerto gRPC 50053) - Depende de MSSQL
+  # ------------------------------------------------
+  receipt:
+    build:
+      context: .
+      dockerfile: services/receipt/Dockerfile
+      args:
+        SERVICE_NAME: receipt
+    container_name: receipt
+    expose:
+      - "50053"
+    environment:
+      - PORT=3000
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+      - DB_NAME=QuetzalShipDB
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      mssql:
+        condition: service_healthy
+      mssql-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - elk
+
+
+  # ------------------------------------------------
+  # ORDERS (Puerto gRPC 50051) - Depende de Pricing y MSSQL
+  # ------------------------------------------------
+  orders:
+    build:
+      context: .
+      dockerfile: services/orders/Dockerfile
+      args:
+        SERVICE_NAME: orders
+    container_name: orders
+    expose:
+      - "50051"
+    environment:
+      - PORT=3000
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+      - DB_NAME=QuetzalShipDB
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      pricing:
+        condition: service_healthy
+      mssql:
+        condition: service_healthy
+      mssql-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - elk
+
+
+
+  # ------------------------------------------------
+  # GATEWAY (Puerto 3000) - Depende de todos los servicios
+  # ------------------------------------------------
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+      args:
+        SERVICE_NAME: gateway
+    container_name: gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - elk
+    depends_on:
+      orders:
+        condition: service_healthy
+      receipt:
+        condition: service_healthy
+      fx-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+
+  # ------------------------------------------------
+  # FRONTEND (Puerto 80) - Depende del Gateway
+  # ------------------------------------------------
+  frontend:
+    build:
+      context: services/frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - elk
+    depends_on:
+      gateway:
+        condition: service_healthy
+  
+  setup:
+    profiles:
+      - setup
+    build:
+      context: services/ELK/setup/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    init: true
+    volumes:
+      - ./services/ELK/setup/entrypoint.sh:/entrypoint.sh:ro,Z
+      - ./services/ELK/setup/lib.sh:/lib.sh:ro,Z
+      - ./services/ELK/setup/roles:/roles:ro,Z
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+      METRICBEAT_INTERNAL_PASSWORD: ${METRICBEAT_INTERNAL_PASSWORD:-}
+      FILEBEAT_INTERNAL_PASSWORD: ${FILEBEAT_INTERNAL_PASSWORD:-}
+      HEARTBEAT_INTERNAL_PASSWORD: ${HEARTBEAT_INTERNAL_PASSWORD:-}
+      MONITORING_INTERNAL_PASSWORD: ${MONITORING_INTERNAL_PASSWORD:-}
+      BEATS_SYSTEM_PASSWORD: ${BEATS_SYSTEM_PASSWORD:-}
+    network_mode: service:elasticsearch
+    depends_on:
+      - elasticsearch
+
+  # The 'kibana-genkeys' service runs a one-off command which generates and
+  # prints encryption keys for Kibana.
+  #
+  # By default, it is excluded from the services started by 'docker compose up'
+  # due to the non-default profile it belongs to. To run it, either provide the
+  # '--profile=setup' CLI flag to Compose commands, or "up" the service by name
+  # such as 'docker compose up kibana-genkeys'.
+  kibana-genkeys:
+    profiles:
+      - setup
+    build:
+      context: services/ELK/kibana/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    command:
+      - bin/kibana-encryption-keys
+      - generate
+    network_mode: none
+
+  elasticsearch:
+    build:
+      context: services/ELK/elasticsearch/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./services/ELK/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,Z
+      - elasticsearch:/usr/share/elasticsearch/data:Z
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      node.name: elasticsearch
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      # Bootstrap password.
+      # Used to initialize the keystore during the initial startup of
+      # Elasticsearch. Ignored on subsequent runs.
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      # Use single node discovery in order to disable production mode and avoid bootstrap checks.
+      # see: https://www.elastic.co/docs/deploy-manage/deploy/self-managed/bootstrap-checks
+      discovery.type: single-node
+    networks:
+      - elk
+    restart: unless-stopped
+
+  logstash:
+    build:
+      context: services/ELK/logstash/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./services/ELK/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro,Z
+      - ./services/ELK/logstash/pipeline:/usr/share/logstash/pipeline:ro,Z
+    ports:
+      - 5044:5044
+      - 50000:50000/tcp
+      - 50000:50000/udp
+      - 9600:9600
+    environment:
+      LS_JAVA_OPTS: -Xms256m -Xmx256m
+      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  kibana:
+    build:
+      context: services/ELK/kibana/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    volumes:
+      - ./services/ELK/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+    ports:
+      - 5601:5601
+    environment:
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  filebeat:
+    build:
+      context: services/ELK/extensions/filebeat/
+      args:
+        ELASTIC_VERSION: ${ELASTIC_VERSION}
+    # Run as 'root' instead of 'filebeat' (uid 1000) to allow reading
+    # 'docker.sock' and the host's filesystem.
+    user: root
+    command:
+      # Log to stderr.
+      - -e
+      # Disable config file permissions checks. Allows mounting
+      # 'config/filebeat.yml' even if it's not owned by root.
+      # see: https://www.elastic.co/docs/reference/beats/libbeat/config-file-permissions
+      - --strict.perms=false
+    volumes:
+      - ./services/ELK/extensions/filebeat/config/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro,Z
+      - type: bind
+        source: /var/lib/docker/containers
+        target: /var/lib/docker/containers
+        read_only: true
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+    environment:
+      FILEBEAT_INTERNAL_PASSWORD: ${FILEBEAT_INTERNAL_PASSWORD:-}
+      BEATS_SYSTEM_PASSWORD: ${BEATS_SYSTEM_PASSWORD:-}
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+
+networks:
+  elk:
+    driver: bridge
+
+
+
+# ------------------------------------------------
+# VOLUMES
+# ------------------------------------------------
+volumes:
+  mssql-data:
+    driver: local
+  redis-data:
+    driver: local
+  elasticsearch:
+    driver: local

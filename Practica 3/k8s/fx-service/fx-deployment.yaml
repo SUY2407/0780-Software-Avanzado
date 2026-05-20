@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fx-service
+  labels:
+    app: fx-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fx-service
+  template:
+    metadata:
+      labels:
+        app: fx-service
+    spec:
+      containers:
+        - name: fx-service
+          image: 11erick21/fx-service:1.0
+          imagePullPolicy: Always
+          ports:
+            - name: grpc
+              containerPort: 50054
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: fx-service-config
+            - secretRef:
+                name: fx-service-secret
+          livenessProbe:
+            tcpSocket:
+              port: 50054
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 50054
+            initialDelaySeconds: 5
+            periodSeconds: 10

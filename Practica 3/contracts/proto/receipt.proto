@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package receipt;
+
+// Request: Generar recibo
+message GenerateReceiptRequest {
+  string order_id = 1;
+}
+
+// Response: Datos del recibo
+message ReceiptResponse {
+  string order_id = 1;
+  string generated_at = 2;
+  string content_body = 3; // Puede ser un JSON stringificado o texto formateado con el detalle
+}
+
+service ReceiptService {
+  rpc GenerateReceipt (GenerateReceiptRequest) returns (ReceiptResponse);
+}

@@ -1,0 +1,399 @@
+openapi: 3.0.3
+info:
+  title: API Gateway - E-commerce Platform
+  description: |
+    API Gateway que expone endpoints REST para la gestión de órdenes y recibos.
+    Este gateway actúa como punto de entrada único para los servicios de backend (Orders y Receipt)
+    que se comunican mediante gRPC.
+  version: 1.0.0
+  contact:
+    name: Team API
+    email: api-support@example.com
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desarrollo local
+  - url: https://api.example.com
+    description: Servidor de producción
+
+tags:
+  - name: Health
+    description: Endpoints de salud y monitoreo del servicio
+  - name: Orders
+    description: Gestión de órdenes de compra
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Verificar estado del servicio
+      description: Endpoint de health check para verificar que el API Gateway está funcionando correctamente
+      operationId: checkHealth
+      responses:
+        '200':
+          description: Servicio funcionando correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: api-gateway
+
+  /v1/orders:
+    post:
+      tags:
+        - Orders
+      summary: Crear una nueva orden
+      description: Crea una nueva orden de compra con los items especificados
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            examples:
+              orderExample:
+                summary: Ejemplo de orden con descuento
+                value:
+                  customer_name: Juan Pérez
+                  items:
+                    - product_id: PROD-001
+                      quantity: 2
+                      unit_price: 25.50
+                    - product_id: PROD-002
+                      quantity: 1
+                      unit_price: 15.00
+                  discount_code: SUMMER2024
+      responses:
+        '201':
+          description: Orden creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Orders
+      summary: Listar todas las órdenes
+      description: Obtiene una lista de todas las órdenes en el sistema
+      operationId: listOrders
+      responses:
+        '200':
+          description: Lista de órdenes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Obtener una orden específica
+      description: Obtiene los detalles de una orden por su ID
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único de la orden
+          schema:
+            type: string
+          example: ord_1234567890
+      responses:
+        '200':
+          description: Orden encontrada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          description: Orden no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Order not found
+                statusCode: 404
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/orders/{id}/cancel:
+    post:
+      tags:
+        - Orders
+      summary: Cancelar una orden
+      description: Cancela una orden existente por su ID
+      operationId: cancelOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único de la orden a cancelar
+          schema:
+            type: string
+          example: ord_1234567890
+      responses:
+        '200':
+          description: Orden cancelada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          description: Orden no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: La orden ya está cancelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Order already cancelled
+                statusCode: 409
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/orders/{id}/receipt:
+    get:
+      tags:
+        - Orders
+      summary: Generar recibo de una orden
+      description: Genera y obtiene el recibo detallado de una orden específica
+      operationId: getReceipt
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único de la orden
+          schema:
+            type: string
+          example: ord_1234567890
+      responses:
+        '200':
+          description: Recibo generado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        '404':
+          description: Orden no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required:
+        - customer_name
+        - items
+      properties:
+        customer_name:
+          type: string
+          description: Nombre del cliente que realiza la orden
+          example: Juan Pérez
+          minLength: 1
+        items:
+          type: array
+          description: Lista de items en la orden
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        discount_code:
+          type: string
+          description: Código de descuento aplicable (opcional)
+          example: SUMMER2024
+
+    OrderItem:
+      type: object
+      required:
+        - product_id
+        - quantity
+        - unit_price
+      properties:
+        product_id:
+          type: string
+          description: ID único del producto
+          example: PROD-001
+        quantity:
+          type: integer
+          description: Cantidad de unidades del producto
+          minimum: 1
+          example: 2
+        unit_price:
+          type: number
+          format: float
+          description: Precio unitario del producto
+          minimum: 0
+          example: 25.50
+
+    OrderResponse:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: ID único de la orden
+          example: ord_1234567890
+        customer_name:
+          type: string
+          description: Nombre del cliente
+          example: Juan Pérez
+        items:
+          type: array
+          description: Lista de items en la orden
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        total_amount:
+          type: number
+          format: float
+          description: Monto total de la orden
+          example: 66.00
+        discount_applied:
+          type: number
+          format: float
+          description: Descuento aplicado
+          example: 6.60
+        final_amount:
+          type: number
+          format: float
+          description: Monto final después del descuento
+          example: 59.40
+        status:
+          type: string
+          description: Estado actual de la orden
+          enum:
+            - pending
+            - confirmed
+            - cancelled
+            - completed
+          example: confirmed
+        created_at:
+          type: string
+          format: date-time
+          description: Fecha y hora de creación de la orden
+          example: 2024-12-21T10:30:00Z
+
+    ReceiptResponse:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: ID de la orden
+          example: ord_1234567890
+        customer_name:
+          type: string
+          description: Nombre del cliente
+          example: Juan Pérez
+        items:
+          type: array
+          description: Detalle de items en el recibo
+          items:
+            type: object
+            properties:
+              product_id:
+                type: string
+                example: PROD-001
+              quantity:
+                type: integer
+                example: 2
+              unit_price:
+                type: number
+                format: float
+                example: 25.50
+              subtotal:
+                type: number
+                format: float
+                example: 51.00
+        subtotal:
+          type: number
+          format: float
+          description: Subtotal antes de descuentos
+          example: 66.00
+        discount_code:
+          type: string
+          description: Código de descuento aplicado
+          example: SUMMER2024
+        discount_amount:
+          type: number
+          format: float
+          description: Monto del descuento
+          example: 6.60
+        total:
+          type: number
+          format: float
+          description: Total final del recibo
+          example: 59.40
+        generated_at:
+          type: string
+          format: date-time
+          description: Fecha y hora de generación del recibo
+          example: 2024-12-21T10:30:00Z
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensaje de error descriptivo
+          example: Error creating order
+        statusCode:
+          type: integer
+          description: Código de estado HTTP
+          example: 400
+        error:
+          type: string
+          description: Tipo de error (opcional)
+          example: Bad Request
