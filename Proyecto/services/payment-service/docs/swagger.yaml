@@ -1,0 +1,367 @@
+basePath: /api
+definitions:
+  payment-service_internal_models.AgregarBalanceRequest:
+    properties:
+      monto:
+        example: 500
+        type: number
+      usuarioId:
+        example: 123
+        type: integer
+      walletId:
+        example: wallet-abc-123
+        type: string
+    type: object
+  payment-service_internal_models.CrearMetodoPagoType:
+    properties:
+      numero:
+        example: "4111111111111111"
+        type: string
+      tipo:
+        example: tarjeta
+        type: string
+      usuarioId:
+        example: 123
+        type: integer
+    type: object
+  payment-service_internal_models.CrearWalletMoneda:
+    properties:
+      moneda:
+        example: GTQ
+        type: string
+      usuarioId:
+        example: 123
+        type: integer
+    type: object
+  payment-service_internal_models.DesactivarMetodoPagoId:
+    properties:
+      metodoId:
+        example: card-1234
+        type: string
+    type: object
+  payment-service_internal_models.ObtenerBalanceRequest:
+    properties:
+      usuarioId:
+        example: 123
+        type: integer
+    type: object
+  payment-service_internal_models.ObtenerMetodosRequest:
+    properties:
+      usuarioId:
+        example: 123
+        type: integer
+    type: object
+  payment-service_internal_models.ProcesarPagoRequest:
+    properties:
+      metodoPago:
+        example: tarjeta
+        type: string
+      montoTarjeta:
+        example: 150.75
+        type: number
+      montoWallet:
+        example: 100
+        type: number
+      ordenId:
+        example: ORD-98765
+        type: string
+      total:
+        example: 250.75
+        type: number
+      usuarioId:
+        example: 123
+        type: integer
+    type: object
+host: localhost:8000
+info:
+  contact: {}
+  description: API REST del servicio de pagos
+  title: Payment Service API
+  version: "1.0"
+paths:
+  /agregar-balance:
+    post:
+      consumes:
+      - application/json
+      description: Agrega saldo a un wallet
+      parameters:
+      - description: Datos del balance
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment-service_internal_models.AgregarBalanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Balance agregado
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Request inválido
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No autorizado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Agregar balance
+      tags:
+      - Wallet
+  /crear-metodo-pago:
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo método de pago (tarjeta, etc.)
+      parameters:
+      - description: Datos del método
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment-service_internal_models.CrearMetodoPagoType'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Método creado
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Request inválido
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No autorizado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Crear método de pago
+      tags:
+      - Payments
+  /crear-wallet:
+    post:
+      consumes:
+      - application/json
+      description: Crea un wallet para el usuario
+      parameters:
+      - description: Moneda del wallet
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment-service_internal_models.CrearWalletMoneda'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Wallet creado
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Request inválido
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No autorizado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Crear wallet
+      tags:
+      - Wallet
+  /desactivar-metodo-pago:
+    post:
+      consumes:
+      - application/json
+      description: Desactiva un método de pago existente
+      parameters:
+      - description: ID del método
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment-service_internal_models.DesactivarMetodoPagoId'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Método desactivado
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Request inválido
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No autorizado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Desactivar método de pago
+      tags:
+      - Payments
+  /metodos-pago:
+    post:
+      consumes:
+      - application/json
+      description: Lista los métodos de pago del usuario
+      parameters:
+      - description: Usuario
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment-service_internal_models.ObtenerMetodosRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de métodos
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Request inválido
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No autorizado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obtener métodos de pago
+      tags:
+      - Payments
+  /obtener-balance:
+    post:
+      consumes:
+      - application/json
+      description: Obtiene el balance actual del usuario
+      parameters:
+      - description: Usuario
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment-service_internal_models.ObtenerBalanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Balance obtenido
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Request inválido
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No autorizado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obtener balance
+      tags:
+      - Wallet
+  /procesar-pago:
+    post:
+      consumes:
+      - application/json
+      description: Procesa un pago usando wallet y/o tarjeta
+      parameters:
+      - description: Datos del pago
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment-service_internal_models.ProcesarPagoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pago procesado
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Request inválido
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No autorizado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Procesar un pago
+      tags:
+      - Payments
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,547 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  description: API REST para el microservicio de pagos y gestión de wallet
+  version: 1.0.0
+  contact:
+    name: EconoMarket Team
+
+servers:
+  - url: http://localhost:8000
+    description: Desarrollo local
+  - url: http://payment-service:8000
+    description: Docker network
+  
+tags:
+  - name: payment
+    description: Gestion de pagos y de wallet
+
+paths:
+  /api/procesar-pago:
+    post:
+      tags: [payment]
+      summary: registrar transaccion
+      operationId: processPayment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/paymentRequest'
+      responses:
+        200:
+          description: 'Pago procesado exitosamente'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction:
+                    $ref: '#/components/schemas/Transaction'
+        500:
+          description: 'Error al procesar pago'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errorpago'
+        400:
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /api/obtener-balance:
+    get:
+      tags: [payment]
+      summary: Obtiene el balance de la wallet del usuario
+      operationId: getBalance
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: 'Balance de wallet'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Balance'
+        500:
+          descripcion: 'Error al obtener balance'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schema/Errorbalance'
+        400:
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /api/agregar-balance:
+    post:
+      tags: [payment]
+      summary: Agregar balance a wallet
+      operationId: AddBalance
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddBalanceRequest'
+      responses:
+      200:
+        description: 'Balance agregado exitosamente'
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transaction:
+                  $ref: '#/components/schemas/AddBalance'
+      500:
+        description: 'Error al procesar pago'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorAddBalance'
+      400:
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /api/desactivar-metodo-pago:
+    post:
+      tags: [payment]
+      summary: Desactivar metodo de pago
+      operationId: DeactivatePaymentMethod
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deactivateRequest'
+      responses:
+        200:
+          description: 'Metodo de pago desactivado exitosamente'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction:
+                    $ref: '#/components/schemas/Deactivate'
+        500:
+          description: 'Error al procesar pago'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errordesactivar'
+        400:
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /api/metodos-pago:
+    get:
+      tags: [payment]
+      summary: Obtiene los metodos de pago
+      operationId: getPaymentMethods
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: 'Metodos pago'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metodos'
+        500:
+          descripcion: 'Error al obtener metodos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schema/Errormetodos'
+        400:
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /api/crear-metodo-pago:
+    post:
+      tags: [payment]
+      summary: Crear Metodo de Pago
+      operationId: CreatePaymentMethod
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/crearMetodoRequest'
+      responses:
+        200:
+          description: 'Metodo de pago creado exitosamente'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction:
+                    $ref: '#/components/schemas/MetodoPago'
+        500:
+          description: 'Error al procesar pago'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMetodo'
+        400:
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /api/crear-wallet:
+    post:
+      tags: [payment]
+      summary: Crear wallet
+      operationId: CreateWallet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/crearWalletRequest'
+      responses:
+        200:
+          description: 'Metodo de pago creado exitosamente'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction:
+                    $ref: '#/components/schemas/CrearWallet'
+        500:
+          description: 'Error al crear Wallet'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWallet'
+        400:
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  security:
+  - bearerAuth: []
+  components:
+    securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    schemas:
+      paymentRequest:
+        type: object
+        required:
+          - ordenId
+          - total
+          - montoWallet
+          - montoTarjeta
+          - metodoPago
+        properties:
+          OrdenId:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          Total:
+            type: number
+            example: 150.50
+          MontoWallet:
+            type: number
+            example: 75.00
+          MontoTarjeta:
+            type: number
+            example: 75.00
+          MetodoPago:
+            type: string
+            example: "6f9619ff-8b86-d011-b42d-00cf4fc964ff"
+      Transaction:
+        type: object
+        required:
+          - TransaccionId
+          - Mensaje
+          - Exito
+        properties:
+          TransaccionId:
+            type: string
+            example: "123e4567-e89b-12d3-a456-426614174000"
+          Mensaje:
+            type: string
+            example: "Pago procesado exitosamente"
+          Exito:
+            type: boolean
+            example: true
+      ErrorPago:
+        type: object
+        required:
+          - TransaccionId
+          - Mensaje
+          - Exito
+        properties:
+          TransaccionId:
+            type: string
+            example: ""
+          Mensaje:
+            type: string
+            example: "Error al procesar pago"
+          Exito:
+            type: boolean
+            example: false
+      Balance:
+        type: object
+        required:
+          - Balance
+          - Moneda
+          - Exito
+        properties:
+          Balance:
+            type: number
+            example: 50.00
+          Moneda:
+            type: string
+            example: "GTQ"
+          Exito:
+            type: boolean
+            example: true
+      Errorbalance:
+        type: object
+        required:
+          - Balance
+          - Moneda
+          - Exito
+        properties:
+          Balance:
+            type: number
+            example: 0
+          Moneda:
+            type: string
+            example: ""
+          Exito:
+            type: boolean
+            example: false
+      AddBalanceRequest:
+        type: object
+        required:
+          - walletId
+          - monto
+        poperties:
+          walletId:
+            type: string
+            example: "2c1a1f48-9b3c-4bea-8c89-35c993e45a7d"
+          Monto:
+            type: number
+            example: 200.00
+      AddBalance:
+        type: object
+        required:
+          - NuevoBalance
+          - Mensaje
+          - Exito
+        properties:
+          NuevoBalance:
+            type: number
+            example: 80.99
+          Mensaje:
+            type: string
+            example: "Balance agregado exitosamente"
+          Exito:
+            type: boolean
+            example: true
+      ErrorAddBalance:
+        type: object
+        required:
+          - NuevoBalance
+          - Mensaje
+          - Exito
+        properties:
+          NuevoBalance:
+            type: number
+            example: 0
+          Mensaje:
+            type: string
+            example: "Error al agregar balance"
+          Exito:
+            type: boolean
+            example: false
+      deactivateRequest:
+        type: object
+        required:
+          - MetodoId
+        properties:
+          MetodoId:
+            type: string
+            example: "7b9c6b10-3f29-4adc-9c1e-2a4a2f56b9e1"
+      Deactivate:
+        type: object
+        required:
+          - Mensaje
+          - Exito
+        properties:
+          Mensaje:
+            type: string
+            example: "Metodo de pago desactivado exitosamente"
+          Exito:
+            type: boolean
+            example: true
+      Errordesactivar:
+        type: object
+        required:
+          - Mensaje
+          - Exito
+        properties:
+          Mensaje:
+            type: string
+            example: "Metodo de pago desactivado exitosamente"
+          Exito:
+            type: boolean
+            example: true
+      Metodos:
+        type: object
+        required:
+          - MetodosPago
+          - Exito
+          - Mensaje
+        properties:
+          MetodosPago:
+            type: array
+            items:
+              $ref: "#/components/schemas/Metodo"
+          Mensaje:
+            type: string
+            example: "Métodos de pago obtenidos exitosamente"
+          Exito:
+            type: boolean
+            example: true
+      Errormetodos:
+        type: object
+        required:
+          - MetodosPago
+          - Exito
+          - Mensaje
+        properties:
+          MetodosPago:
+            type: array
+            nullable: true
+            items:
+              $ref: "#/components/schemas/Metodo"
+            example: null
+          Mensaje:
+            type: string
+            example: "Error al obtener metodos de pago"
+          Exito:
+            type: boolean
+            example: false
+      crearMetodoRequest:
+        type: object
+        required:
+          - tipo
+          - numero
+        properties:
+          Tipo:
+            type: string
+            example: "credito"
+          Numero:
+            type: string
+            example: "798063216802"
+      MetodoPago:
+        type: object
+        required:
+          - Mensaje
+          - Exito
+        properties:
+          Mensaje:
+            type: string
+            example: "Metodo de pago creado exitosamente"
+          Exito:
+            type: boolean
+            example: true
+      ErrorMetodo:
+        type: object
+        required:
+          - Mensaje
+          - Exito
+        properties:
+          Mensaje:
+            type: string
+            example: "Error al crear metodo de pago"
+          Exito:
+            type: boolean
+            example: false
+      crearWalletRequest:
+        type: object
+        required:
+          - moneda
+        properties:
+          moneda:
+            type: string
+            example: "GTQ"
+      CrearWallet:
+        type: object
+        required:
+          - WalletId
+          - Mensaje
+          - Exito
+        properties:
+          WalletId:
+            type: string
+            example: "5b9c6b10-3f29-4ddc-9c2e-2a4a2f56b9e2"
+          Mensaje:
+            type: string
+            example: "Wallet creada exitosamente"
+          Exito:
+            type: boolean
+            example: true
+      ErrorWallet:
+        type: object
+        required:
+          - WalletId
+          - Mensaje
+          - Exito
+        properties:
+          WalletId:
+            type: string
+            example: ""
+          Mensaje:
+            type: string
+            example: "Error al crear wallet"
+          Exito:
+            type: boolean
+            example: false
+      BadRequest:
+        type: object
+        required:
+          - Exito
+          - Mensaje
+          - Error
+        properties:
+          Exito:
+            type: boolean
+            example: false
+          Mensaje:
+            type: string
+            example: "Request Body invalido"
+          Error:
+            type: string
+            example: "Error en la peticion"

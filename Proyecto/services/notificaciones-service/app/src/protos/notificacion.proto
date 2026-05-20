@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package notificacion;
+
+service Notificacion{
+    rpc ProveedorNotificacion(ProveedorNotificacionRequest) returns (ProveedorNotificacionResponse){} 
+    rpc ClienteNotificacion(ClienteNotificacionRequest) returns (ClienteNotificacionResponse){}
+}
+
+message ProductoNotificacion {
+  int32 id_producto = 1;
+  int32 cantidad = 2;
+}
+
+message ProveedorNotificacionRequest {
+  int32 id_proveedor = 1;
+  string estado = 2;
+  string created_at = 3;
+  string mensaje = 4;
+  repeated ProductoNotificacion productos = 5;
+}
+
+message ProveedorNotificacionResponse{
+  int32 id_proveedor = 1;
+  string estado = 2;
+  string created_at = 3;
+  string mensaje = 4;
+  string resultado  = 5;
+}
+
+message ClienteNotificacionRequest{
+    int32 id_usuario= 1;
+    int32 id_carro = 2;
+    string estado = 3;
+    string tipo = 4;
+    string created_at = 5;
+    string id_orden = 6;
+    repeated ProductoNotificacion productos = 7;
+}
+
+message ClienteNotificacionResponse {
+    int32 id_usuario= 1;
+    int32 id_carro = 2;
+    string estado = 3;
+    string tipo = 4;
+    string created_at = 5;
+    string resultado  = 6;
+}

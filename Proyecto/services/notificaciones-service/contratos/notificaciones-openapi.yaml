@@ -1,0 +1,250 @@
+openapi: 3.1.0
+info:
+  title: Notificacion API
+  description: API para notificaciones
+  version: 1.0.0
+
+paths:
+  /notificaciones/proveedor:
+    post:
+      tags:
+        - notificaciones
+      summary: Crear Proveedor Notificacion
+      description: ProveedorNotificacion → Exactamente igual que GRPC
+      operationId: crear_proveedor_notificacion_notificaciones_proveedor_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProveedorNotificacionCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProveedorNotificacionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /notificaciones/cliente:
+    post:
+      tags:
+        - notificaciones
+      summary: Crear Cliente Notificacion
+      description: ClienteNotificacion → Exactamente igual que GRPC
+      operationId: crear_cliente_notificacion_notificaciones_cliente_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteNotificacionCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteNotificacionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /notificaciones/healthready:
+    get:
+      tags:
+        - notificaciones
+      summary: Health Ready
+      operationId: health_ready_notificaciones_healthready_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+
+  /notificaciones/healthlive:
+    get:
+      tags:
+        - notificaciones
+      summary: Health Live
+      operationId: health_live_notificaciones_healthlive_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+
+components:
+  schemas:
+    ClienteNotificacionCreate:
+      properties:
+        id_usuario:
+          type: integer
+          title: Id Usuario
+        id_carro:
+          type: integer
+          title: Id Carro
+        estado:
+          type: string
+          title: Estado
+        tipo:
+          type: string
+          title: Tipo
+        created_at:
+          type: string
+          title: Created At
+        id_orden:
+          type: string
+          title: Id Orden
+        productos:
+          items:
+            $ref: '#/components/schemas/ProductoNotificacionCreate'
+          type: array
+          title: Productos
+          default: []
+      type: object
+      required:
+        - id_usuario
+        - id_carro
+        - estado
+        - tipo
+        - created_at
+        - id_orden
+      title: ClienteNotificacionCreate
+
+    ClienteNotificacionResponse:
+      properties:
+        id_usuario:
+          type: integer
+          title: Id Usuario
+        id_carro:
+          type: integer
+          title: Id Carro
+        estado:
+          type: string
+          title: Estado
+        tipo:
+          type: string
+          title: Tipo
+        created_at:
+          type: string
+          title: Created At
+        resultado:
+          type: string
+          title: Resultado
+      type: object
+      required:
+        - id_usuario
+        - id_carro
+        - estado
+        - tipo
+        - created_at
+        - resultado
+      title: ClienteNotificacionResponse
+
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+
+    ProductoNotificacionCreate:
+      properties:
+        id_producto:
+          type: integer
+          title: Id Producto
+      type: object
+      required:
+        - id_producto
+      title: ProductoNotificacionCreate
+
+    ProveedorNotificacionCreate:
+      properties:
+        id_proveedor:
+          type: integer
+          title: Id Proveedor
+        estado:
+          type: string
+          title: Estado
+        created_at:
+          type: string
+          title: Created At
+        mensaje:
+          type: string
+          title: Mensaje
+        productos:
+          items:
+            $ref: '#/components/schemas/ProductoNotificacionCreate'
+          type: array
+          title: Productos
+          default: []
+      type: object
+      required:
+        - id_proveedor
+        - estado
+        - created_at
+        - mensaje
+      title: ProveedorNotificacionCreate
+
+    ProveedorNotificacionResponse:
+      properties:
+        id_proveedor:
+          type: integer
+          title: Id Proveedor
+        estado:
+          type: string
+          title: Estado
+        created_at:
+          type: string
+          title: Created At
+        mensaje:
+          type: string
+          title: Mensaje
+        resultado:
+          type: string
+          title: Resultado
+      type: object
+      required:
+        - id_proveedor
+        - estado
+        - created_at
+        - mensaje
+        - resultado
+      title: ProveedorNotificacionResponse
+
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError

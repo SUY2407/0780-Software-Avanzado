@@ -1,0 +1,552 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API REST del servicio de pagos",
+        "title": "Payment Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8000",
+    "basePath": "/api",
+    "paths": {
+        "/agregar-balance": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Agrega saldo a un wallet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Agregar balance",
+                "parameters": [
+                    {
+                        "description": "Datos del balance",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment-service_internal_models.AgregarBalanceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Balance agregado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Request inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "No autorizado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/crear-metodo-pago": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Crea un nuevo método de pago (tarjeta, etc.)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Crear método de pago",
+                "parameters": [
+                    {
+                        "description": "Datos del método",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment-service_internal_models.CrearMetodoPagoType"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Método creado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Request inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "No autorizado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/crear-wallet": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Crea un wallet para el usuario",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Crear wallet",
+                "parameters": [
+                    {
+                        "description": "Moneda del wallet",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment-service_internal_models.CrearWalletMoneda"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Wallet creado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Request inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "No autorizado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/desactivar-metodo-pago": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Desactiva un método de pago existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Desactivar método de pago",
+                "parameters": [
+                    {
+                        "description": "ID del método",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment-service_internal_models.DesactivarMetodoPagoId"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Método desactivado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Request inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "No autorizado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/metodos-pago": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista los métodos de pago del usuario",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Obtener métodos de pago",
+                "parameters": [
+                    {
+                        "description": "Usuario",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment-service_internal_models.ObtenerMetodosRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de métodos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Request inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "No autorizado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/obtener-balance": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Obtiene el balance actual del usuario",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Obtener balance",
+                "parameters": [
+                    {
+                        "description": "Usuario",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment-service_internal_models.ObtenerBalanceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Balance obtenido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Request inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "No autorizado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/procesar-pago": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Procesa un pago usando wallet y/o tarjeta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Procesar un pago",
+                "parameters": [
+                    {
+                        "description": "Datos del pago",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment-service_internal_models.ProcesarPagoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pago procesado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Request inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "No autorizado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "payment-service_internal_models.AgregarBalanceRequest": {
+            "type": "object",
+            "properties": {
+                "monto": {
+                    "type": "number",
+                    "example": 500
+                },
+                "usuarioId": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "walletId": {
+                    "type": "string",
+                    "example": "wallet-abc-123"
+                }
+            }
+        },
+        "payment-service_internal_models.CrearMetodoPagoType": {
+            "type": "object",
+            "properties": {
+                "numero": {
+                    "type": "string",
+                    "example": "4111111111111111"
+                },
+                "tipo": {
+                    "type": "string",
+                    "example": "tarjeta"
+                },
+                "usuarioId": {
+                    "type": "integer",
+                    "example": 123
+                }
+            }
+        },
+        "payment-service_internal_models.CrearWalletMoneda": {
+            "type": "object",
+            "properties": {
+                "moneda": {
+                    "type": "string",
+                    "example": "GTQ"
+                },
+                "usuarioId": {
+                    "type": "integer",
+                    "example": 123
+                }
+            }
+        },
+        "payment-service_internal_models.DesactivarMetodoPagoId": {
+            "type": "object",
+            "properties": {
+                "metodoId": {
+                    "type": "string",
+                    "example": "card-1234"
+                }
+            }
+        },
+        "payment-service_internal_models.ObtenerBalanceRequest": {
+            "type": "object",
+            "properties": {
+                "usuarioId": {
+                    "type": "integer",
+                    "example": 123
+                }
+            }
+        },
+        "payment-service_internal_models.ObtenerMetodosRequest": {
+            "type": "object",
+            "properties": {
+                "usuarioId": {
+                    "type": "integer",
+                    "example": 123
+                }
+            }
+        },
+        "payment-service_internal_models.ProcesarPagoRequest": {
+            "type": "object",
+            "properties": {
+                "metodoPago": {
+                    "type": "string",
+                    "example": "tarjeta"
+                },
+                "montoTarjeta": {
+                    "type": "number",
+                    "example": 150.75
+                },
+                "montoWallet": {
+                    "type": "number",
+                    "example": 100
+                },
+                "ordenId": {
+                    "type": "string",
+                    "example": "ORD-98765"
+                },
+                "total": {
+                    "type": "number",
+                    "example": 250.75
+                },
+                "usuarioId": {
+                    "type": "integer",
+                    "example": 123
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

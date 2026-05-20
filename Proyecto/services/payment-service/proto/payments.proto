@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package payments;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "payment-service/pb";
+
+service PaymentService {
+    rpc ProcessPayment (PaymentRequest) returns (PaymentResponse);
+    rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
+    rpc AddBalance (AddBalanceRequest) returns (AddBalanceResponse);
+    rpc GetTransaction(TransactionRequest) returns (TransactionResponse);
+}
+
+message PaymentRequest {
+    int64 usuarioId = 1;
+    string ordenId = 2;
+    double total = 3;
+    double montoWallet = 4;
+    double montoTarjeta = 5;
+    string metodoPago = 6;
+}
+
+message PaymentResponse {
+    string transaccionId =1;
+    bool exito = 2;
+    string mensaje = 3;
+    PaymentStatus status = 4;
+}
+
+message GetBalanceRequest {
+    int64 usuarioId = 1;
+}
+
+message GetBalanceResponse {
+    double balance = 1;
+    string currency = 2;
+    bool success = 3;
+}
+
+message AddBalanceRequest {
+    string walletId = 1;
+    int64 usuarioId = 2;
+    double monto = 3;
+}
+
+message AddBalanceResponse {
+    double nuevoBalance = 1;
+    bool exito = 2;
+    string mensaje = 3;
+}
+
+message TransactionRequest {
+    string transaccionId = 1;
+}
+
+message TransactionResponse {
+    string transaccionId = 1;
+    int64 usuarioId = 2;
+    string ordenId = 3;
+    double total = 4;
+    string metodoPago = 5;
+    google.protobuf.Timestamp fechaCompletado = 6;
+}
+
+enum PaymentStatus {
+    PAYMENT_PENDING = 0;
+    PAYMENT_COMPLETED = 1;
+    PAYMENT_FAILED = 2;
+    PAYMENT_CANCELLED = 3;
+}

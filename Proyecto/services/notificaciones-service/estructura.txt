@@ -1,0 +1,80 @@
+﻿Listado de rutas de carpetas
+El n·mero de serie del volumen es 00430041 B289:3B53
+C:\USERS\ERICK\ONEDRIVE\DOCUMENTOS\ERICK\2025 VACACIONES SEGUNDO SEMESTRE\SOFTWARE AVANZADO\LABORATORIO\12_SOFTWAREAVANZADO_PROYECTOFASES\SERVICES\NOTIFICACIONES-SERVICE\APP
+ª   dockerfile
+ª   
++---src
+ª   ª   .env
+ª   ª   main.py
+ª   ª   requirements.txt
+ª   ª   
+ª   +---notificacion
+ª   ª   ª   __init__.py
+ª   ª   ª   
+ª   ª   +---application
+ª   ª   ª   ª   __init__.py
+ª   ª   ª   ª   
+ª   ª   ª   +---dtos
+ª   ª   ª   ª       email_dto.py
+ª   ª   ª   ª       notification_dto.py
+ª   ª   ª   ª       __init__.py
+ª   ª   ª   ª       
+ª   ª   ª   +---services
+ª   ª   ª           email_service.py
+ª   ª   ª           notificacion_service.py
+ª   ª   ª           __init__.py
+ª   ª   ª           
+ª   ª   +---domain
+ª   ª   ª   ª   __init__.py
+ª   ª   ª   ª   
+ª   ª   ª   +---entities
+ª   ª   ª   ª       cliente.py
+ª   ª   ª   ª       producto.py
+ª   ª   ª   ª       proveedor.py
+ª   ª   ª   ª       __init__.py
+ª   ª   ª   ª       
+ª   ª   ª   +---repositories
+ª   ª   ª       ª   __init__.py
+ª   ª   ª       ª   
+ª   ª   ª       +---interfaces
+ª   ª   ª               notificacion_repository.py
+ª   ª   ª               __init__.py
+ª   ª   ª               
+ª   ª   +---infrastructure
+ª   ª   ª   ª   __init__.py
+ª   ª   ª   ª   
+ª   ª   ª   +---persistence
+ª   ª   ª   ª   ª   __init__.py
+ª   ª   ª   ª   ª   
+ª   ª   ª   ª   +---sql_server
+ª   ª   ª   ª           database_connection.py
+ª   ª   ª   ª           notificacion_sql_repository.py
+ª   ª   ª   ª           __init__.py
+ª   ª   ª   ª           
+ª   ª   ª   +---servers
+ª   ª   ª           grpc_server.py
+ª   ª   ª           rest_server.py
+ª   ª   ª           __init__.py
+ª   ª   ª           
+ª   ª   +---presentation
+ª   ª       ª   __init__.py
+ª   ª       ª   
+ª   ª       +---grpc
+ª   ª       ª       notificacion_controller.py
+ª   ª       ª       notificacion_pb2.py
+ª   ª       ª       notificacion_pb2.pyi
+ª   ª       ª       notificacion_pb2_grpc.py
+ª   ª       ª       __init__.py
+ª   ª       ª       
+ª   ª       +---rest
+ª   ª               notificacion_controller.py
+ª   ª               rest_controller_factory.py
+ª   ª               __init__.py
+ª   ª               
+ª   +---protos
+ª           notificacion.proto
+ª           
++---test
+        test_email_service.py
+        test_notificacion_service.py
+        

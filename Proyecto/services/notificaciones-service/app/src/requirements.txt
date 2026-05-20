@@ -1,0 +1,16 @@
+# python -m grpc_tools.protoc -I./protos --python_out="./notificacion/presentation/grpc" --pyi_out="./notificacion/presentation/grpc" --grpc_python_out="./notificacion/presentation/grpc" ./protos/notificacion.proto
+# python -m grpc_tools.protoc -I./protos --python_out="./notificacion/presentation/grpc/auth" --pyi_out="./notificacion/presentation/grpc/auth" --grpc_python_out="./notificacion/presentation/grpc/auth" ./protos/auth.proto
+# python -m grpc_tools.protoc -I./protos --python_out="./notificacion/presentation/grpc/catalog" --pyi_out="./notificacion/presentation/grpc/catalog" --grpc_python_out="./notificacion/presentation/grpc/catalog" ./protos/catalog.proto
+# python -m grpc_tools.protoc -I./protos --python_out="./notificacion/presentation/grpc/orders" --pyi_out="./notificacion/presentation/grpc/orders" --grpc_python_out="./notificacion/presentation/grpc/orders" ./protos/orders.proto
+#$env:PYTHONPATH = ".\src"
+# \app> pytest test\test_email_service.py
+# \app> pytest test\test_notificacion_service.py
+
+grpcio
+pyodbc
+python-dotenv
+fastapi
+uvicorn
+python-multipart
+protobuf
+grpcio-tools

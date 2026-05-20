@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package catalog;
+
+option go_package = "catalog/internal/grpc;grpc";
+
+// ===========================
+// Mensajes
+// ===========================
+
+// Solo para llamadas sin parámetros
+message Empty {}
+
+// Producto para respuesta gRPC
+message Product {
+  int32 id = 1;
+  string sku = 2;
+  string name = 3;
+  string description = 4;
+  double price = 5;
+  int32 stock = 6;
+  string category = 7;
+  string imageUrl = 8;
+  int32 providerId = 9;
+}
+
+// Lista de productos
+message ListProductsResponse {
+  repeated Product products = 1;
+}
+
+// Obtener por ID
+message ProductIdRequest {
+  int32 id = 1;
+}
+
+// Crear producto
+message CreateProductRequest {
+  string sku = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 stock = 5;
+  string category = 6;
+  string imageUrl = 7;
+  int32 providerId = 8;
+}
+
+// Actualizar producto
+message UpdateProductRequest {
+  int32 id = 1;
+  string sku = 2;
+  string name = 3;
+  string description = 4;
+  double price = 5;
+  int32 stock = 6;
+  string category = 7;
+  string imageUrl = 8;
+  int32 providerId = 9;
+}
+
+// Respuesta simple (crear/actualizar/eliminar)
+message GenericResponse {
+  string message = 1;
+}
+
+// ===========================
+// Servicio gRPC
+// ===========================
+service CatalogService {
+  rpc ListProducts (Empty) returns (ListProductsResponse);
+  rpc GetProduct (ProductIdRequest) returns (Product);
+  rpc CreateProduct (CreateProductRequest) returns (GenericResponse);
+  rpc UpdateProduct (UpdateProductRequest) returns (GenericResponse);
+  rpc DeleteProduct (ProductIdRequest) returns (GenericResponse);
+}
