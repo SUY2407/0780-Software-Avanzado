@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-auth
+  labels:
+    app: users-auth
+spec:
+  replicas: 1 # Puedes subirlo a 2 si quieres alta disponibilidad
+  selector:
+    matchLabels:
+      app: users-auth
+  template:
+    metadata:
+      labels:
+        app: users-auth
+    spec:
+      containers:
+      - name: users-auth
+        # ¡Acuérdate de pushear la imagen y poner tu usuario correcto aquí!
+        image: dcsm24/users-auth:latest 
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080  # HTTP
+          name: http
+        - containerPort: 50051 # gRPC
+          name: grpc
+        env:
+        # CONEXIÓN A LA BASE DE DATOS GENERAL
+        - name: DB_HOST
+          value: "mssql-service" # Asegúrate que así se llame el Service de la BD general
+        - name: DB_PORT
+          value: "1433"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: general-db-secret # El secreto compartido que crearon para la BD
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: general-db-secret
+              key: password
+        - name: DB_NAME
+          value: "economarket" # Ojo: Asegúrate que tu init.db.sql creó esta base o usen master
+        # TUS VARIABLES PROPIAS
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: auth-secrets # Este es tuyo propio
+              key: jwt-secret
+        
+        # PROBES (La traducción de tu HEALTHCHECK del Dockerfile)
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        
+        # RECURSOS (Requisito del proyecto)
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "250m"

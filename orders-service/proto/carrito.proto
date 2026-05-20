@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package carro;
+
+service Greet{
+    rpc SayHello(Hellorequest) returns (Helloreply){}
+    rpc GuardarCarro(GuardarCarroRequest) returns (GuardarCarroResponse){} 
+    rpc ObtenerCarro(ObtenerCarroRequest) returns (ObtenerCarroResponse){} 
+    rpc ActualizarPago(ActualizarPagoRequest) returns (ActualizarPagoResponse){} 
+}
+
+message Hellorequest{
+    string name = 1;
+}
+
+message Helloreply{
+    string name = 1;
+}
+
+message ProductoCarro {
+  int32 id_producto = 1;
+  int32 cantidad = 2;
+  double precio = 3;
+}
+
+message GuardarCarroRequest {
+  int32 id_carro = 1;
+  int32 id_usuario = 2;
+  string estado = 3;
+  string created_at = 4;
+  bool check_out = 5;
+  double total = 6;
+  string updated_at = 7;
+  repeated ProductoCarro productos = 8;
+}
+
+message GuardarCarroResponse{
+    string resultado = 1;
+}
+
+message ObtenerCarroRequest{
+    int32 id_usuario= 1;
+}
+
+message ObtenerCarroResponse {
+  int32 id_carro = 1;
+  int32 id_usuario = 2;
+  string estado = 3;
+  string created_at = 4;
+  bool check_out = 5;
+  double total = 6;
+  string updated_at = 7;
+  repeated ProductoCarro productos = 8;
+}
+
+message ActualizarPagoRequest{
+    string estado = 1;
+}
+
+message ActualizarPagoResponse{
+    string estado = 1;
+}
