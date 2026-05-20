@@ -1,0 +1,332 @@
+{
+	"info": {
+		"_postman_id": "c2b3c4d5-e6f7-g8h9-i0j1-k2l3m4n5o6p7",
+		"name": "Quetzal Ship - Suite Completa (Validación Lógica)",
+		"description": "Pruebas exhaustivas incluyendo validación matemática de precios, flujos de error y ciclo de vida de la orden.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "1. Health Check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Gateway responde\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.service).to.eql(\"api-gateway\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Crear Orden (Cálculo Exacto)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201 Created\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"var jsonData = pm.response.json();",
+							"pm.collectionVariables.set(\"valid_order_id\", jsonData.order_id);",
+							"",
+							"// VALIDACIÓN MATEMÁTICA",
+							"// Peso: 10kg (Mayor que volumétrico 1.6kg)",
+							"// Base: 10kg * 12 (INTERIOR) = 120",
+							"// Servicio: 120 * 1.35 (EXPRESS) = 162",
+							"// Recargos: +7 (Fragil) + 12.5 (Seguro 500*0.025) = 19.5",
+							"// Subtotal: 162 + 19.5 = 181.5",
+							"// Descuento: -10 (FIXED)",
+							"// Total Esperado: 171.5",
+							"",
+							"pm.test(\"Cálculo de Precio Correcto (171.5)\", function () {",
+							"    pm.expect(jsonData.total).to.eql(171.5);",
+							"});",
+							"",
+							"pm.test(\"Desglose Correcto\", function () {",
+							"    pm.expect(jsonData.breakdown.base_subtotal).to.eql(120);",
+							"    pm.expect(jsonData.breakdown.service_subtotal).to.eql(162);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Idempotency-Key",
+						"value": "key-math-test-01",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"origin_zone\": \"METRO\",\n  \"destination_zone\": \"INTERIOR\",\n  \"service_type\": \"EXPRESS\",\n  \"insurance_enabled\": true,\n  \"packages\": [\n    {\n      \"weight_kg\": 10,\n      \"height_cm\": 20,\n      \"width_cm\": 20,\n      \"length_cm\": 20,\n      \"fragile\": true,\n      \"declared_value_q\": 500\n    }\n  ],\n  \"discount\": {\n    \"type\": \"FIXED\",\n    \"value\": 10\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/orders",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Validar Idempotencia (Reenvío)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Debe retornar 201 o 200 (Misma respuesta)\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});",
+							"",
+							"var jsonData = pm.response.json();",
+							"pm.test(\"Debe retornar el MISMO Order ID\", function () {",
+							"    pm.expect(jsonData.order_id).to.eql(pm.collectionVariables.get(\"valid_order_id\"));",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Idempotency-Key",
+						"value": "key-math-test-01",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"origin_zone\": \"METRO\",\n  \"destination_zone\": \"INTERIOR\",\n  \"service_type\": \"EXPRESS\",\n  \"insurance_enabled\": true,\n  \"packages\": [\n    {\n      \"weight_kg\": 10,\n      \"height_cm\": 20,\n      \"width_cm\": 20,\n      \"length_cm\": 20,\n      \"fragile\": true,\n      \"declared_value_q\": 500\n    }\n  ],\n  \"discount\": {\n    \"type\": \"FIXED\",\n    \"value\": 10\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/orders",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Error de Validación (400 Bad Request)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Mensaje de error coherente\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    // NestJS suele devolver un array de mensajes o un mensaje string",
+							"    pm.expect(JSON.stringify(jsonData)).to.include(\"service_type\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Idempotency-Key",
+						"value": "{{$guid}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"origin_zone\": \"METRO\",\n  \"destination_zone\": \"INTERIOR\",\n  \"service_type\": \"express_minuscula_invalido\",\n  \"packages\": [{\"weight_kg\": 1, \"height_cm\": 1, \"width_cm\": 1, \"length_cm\": 1, \"fragile\": false, \"declared_value_q\": 10}]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/orders",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Obtener Detalle",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/orders/{{valid_order_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"orders",
+						"{{valid_order_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Cancelar Orden",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var jsonData = pm.response.json();",
+							"pm.test(\"Estado cambio a CANCELLED\", function () {",
+							"    pm.expect(jsonData.status).to.eql(\"CANCELLED\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/orders/{{valid_order_id}}/cancel",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"orders",
+						"{{valid_order_id}}",
+						"cancel"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. Verificar Cancelación",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Orden sigue existiendo (no borrada)\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var jsonData = pm.response.json();",
+							"pm.test(\"Estado persiste como CANCELLED\", function () {",
+							"    pm.expect(jsonData.status).to.eql(\"CANCELLED\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/orders/{{valid_order_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"orders",
+						"{{valid_order_id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "valid_order_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

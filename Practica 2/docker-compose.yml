@@ -1,0 +1,102 @@
+services:
+  # ------------------------------------------------
+  # FRONTEND (Puerto 5173 -> 80)
+  # ------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: services/frontend/Dockerfile
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  # ------------------------------------------------
+  # GATEWAY (Puerto 3000 -> 3000)
+  # ------------------------------------------------
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+      args:
+        SERVICE_NAME: gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      orders:
+        condition: service_healthy
+      receipt:
+        condition: service_healthy
+
+  # ------------------------------------------------
+  # ORDERS (Puerto gRPC 50051)
+  # ------------------------------------------------
+  orders:
+    build:
+      context: .
+      dockerfile: services/orders/Dockerfile
+      args:
+        SERVICE_NAME: orders
+    expose:
+      - "50051"
+    environment:
+      - PORT=3000 # Puerto HTTP interno para healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      pricing:
+        condition: service_healthy
+
+  # ------------------------------------------------
+  # PRICING (Puerto gRPC 50052)
+  # ------------------------------------------------
+  pricing:
+    build:
+      context: .
+      dockerfile: services/pricing/Dockerfile
+      args:
+        SERVICE_NAME: pricing
+    expose:
+      - "50052"
+    environment:
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ------------------------------------------------
+  # RECEIPT (Puerto gRPC 50053)
+  # ------------------------------------------------
+  receipt:
+    build:
+      context: .
+      dockerfile: services/receipt/Dockerfile
+      args:
+        SERVICE_NAME: receipt
+    expose:
+      - "50053"
+    environment:
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
