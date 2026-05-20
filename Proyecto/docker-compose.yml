@@ -1,0 +1,255 @@
+services:
+  # ==========================================
+  # 🗄️ INFRAESTRUCTURA COMPARTIDA (DB & CACHE)
+  # ==========================================
+  mssql:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    container_name: economarket-mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd123! # Contraseña Maestra
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - economarket-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123! -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      retries: 10
+      start_period: 40s
+      timeout: 10s
+
+  redis:
+    container_name: economarket-redis
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - economarket-net
+
+  # ==========================================
+  # 🚪 API GATEWAY (Go) - ¡NUEVO!
+  # ==========================================
+  gateway:
+    container_name: api-gateway
+    build: ./services/gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # Conectamos con los nombres de servicio definidos abajo
+      - USERS_SERVICE_URL=http://users-auth:8080
+      - ORDERS_SERVICE_URL=http://orders-service:8084
+    depends_on:
+      - users-auth
+      - orders-service
+    networks:
+      - economarket-net
+
+  # ==========================================
+  # 🖥️ FRONTEND (React + Vite)
+  # ==========================================
+  frontend:
+    container_name: economarket-frontend
+    build: ./frontend
+    ports:
+      - "80:80"
+    networks:
+      - economarket-net
+    depends_on:
+      - gateway # Ahora el front debería depender del gateway
+      - users-auth
+      - catalog
+      - cart-checkout
+      - orders-service
+
+  # ==========================================
+  # 1️⃣ USERS AUTH SERVICE (Go)
+  # ==========================================
+  users-auth:
+    container_name: users-auth-service
+    build: ./services/users-auth
+    depends_on:
+      mssql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"   # HTTP
+      - "50051:50051" # gRPC
+    environment:
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd123!
+      - DB_NAME=economarket
+      - JWT_SECRET=super-secret-jwt-key
+      - HTTP_PORT=8080
+      - GRPC_PORT=50051
+    networks:
+      - economarket-net
+
+  # ==========================================
+  # 2️⃣ PAYMENT SERVICE (Go)
+  # ==========================================
+  payment-service:
+    container_name: payment-service
+    build: ./services/payment-service
+    depends_on:
+      mssql:
+        condition: service_healthy
+    ports:
+      - "18082:8082" # gRPC Payment
+      - "8000:8000" # REST Payment
+    environment:
+      - DB_SERVER=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd123!
+      - DB_NAME=paymentsDB
+      - GRPC_PORT=8082
+      - REST_PORT=8000
+    networks:
+      - economarket-net
+
+  # ==========================================
+  # 3️⃣ ORDERS SERVICE (Node/NestJS)
+  # ==========================================
+  orders-service:
+    container_name: orders-service
+    build: ./services/orders-service
+    depends_on:
+      mssql:
+        condition: service_healthy
+    ports:
+      - "8084:8084"   # HTTP Orders
+      - "50052:50052" # gRPC Orders
+    environment:
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USERNAME=sa
+      - DB_PASSWORD=YourStrong@Passw0rd123!
+      - DB_NAME=OrdersDB
+      - USERS_GRPC_URL=users-auth:50051
+      - CATALOG_SERVICE_URL=catalog-service:50058
+      - CART_SERVICE_URL=cart-checkout:50055
+    networks:
+      - economarket-net
+
+  # ==========================================
+  # 4️⃣ CART & CHECKOUT SERVICE (Python)
+  # ==========================================
+  cart-checkout:
+    container_name: cart-checkout-service
+    build: ./services/Cart-Checkout-Service/app
+    depends_on:
+      mssql:
+        condition: service_healthy
+    ports:
+      - "8086:8086"
+      - "50055:50055"
+    environment:
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd123!
+      - DB_NAME=EconoMarketCartDB
+      - GRPC_PORT=50055
+      - HTTP_PORT=8086
+      - AUTH_SERVICE_HOST=users-auth
+      - AUTH_SERVICE_PORT=50051
+      - NOTIFICACION_SERVICE_HOST=notificaciones-service
+      - NOTIFICACION_SERVICE_PORT=50056
+    networks:
+      - economarket-net
+
+  # ==========================================
+  # 5️⃣ CATALOG SERVICES (Catalog, Integrations, FX)
+  # ==========================================
+  catalog:
+    container_name: catalog-service
+    build: ./services/catalog_service/catalog
+    depends_on:
+      mssql:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+      - "50058:50058" # gRPC
+    environment:
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd123!
+      - DB_NAME=CatalogServiceDB
+    networks:
+      - economarket-net
+
+  catalog-integrations:
+    container_name: catalog-integrations
+    build: ./services/catalog_service/integrations
+    depends_on:
+      - catalog
+      - redis
+    ports:
+      - "8091:8091"
+    environment:
+      - EXTERNAL_CATALOG_URL=http://136.112.243.96/external-catalog/v1/products
+      - REDIS_HOST=redis
+      - GROUP_NUMBER=12
+      - JWT_SECRET=super-secret-jwt-key
+    networks:
+      - economarket-net
+
+  catalog-fx:
+    container_name: catalog-fx
+    build: ./services/catalog_service/fx-service
+    depends_on:
+      - redis
+    ports:
+      - "8083:8083"
+    environment:
+      - REDIS_HOST=redis
+    networks:
+      - economarket-net
+
+  # ==========================================
+  # 6️⃣ NOTIFICACIONES SERVICE (Python)
+  # ==========================================
+  notificaciones:
+    container_name: notificaciones-service
+    build: ./services/notificaciones-service/app
+    depends_on:
+      mssql:
+        condition: service_healthy
+    ports:
+      - "8087:8087"   # HTTP Notificaciones
+      - "50056:50056" # gRPC Notificaciones
+    environment:
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd123!
+      - DB_NAME=EconoMarketNotificacionesDB
+      - GRPC_PORT=50056
+      - HTTP_PORT=8087
+      - AUTH_SERVICE_HOST=users-auth
+      - AUTH_SERVICE_PORT=50051
+      - CATALOG_SERVICE_HOST=catalog-service
+      - CATALOG_SERVICE_PORT=50058
+      - ORDER_SERVICE_HOST=orders-service
+      - ORDER_SERVICE_PORT=50052
+    networks:
+      - economarket-net
+
+# ==========================================
+# 🌐 REDES Y VOLÚMENES
+# ==========================================
+networks:
+  economarket-net:
+    driver: bridge
+
+volumes:
+  mssql_data:
