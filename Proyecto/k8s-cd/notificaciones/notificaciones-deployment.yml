@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificaciones
+  labels:
+    app: notificaciones
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notificaciones
+  template:
+    metadata:
+      labels:
+        app: notificaciones
+    spec:
+      containers:
+        - name: notificaciones
+          image: melvinv404/g12-notificaciones-service:latest
+          imagePullPolicy:  Always
+          ports:
+            - containerPort: 8087    # HTTP
+            - containerPort: 50056   # gRPC
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: DB_PORT
+            - name: HTTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: HTTP_PORT
+            - name: GRPC_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: GRPC_PORT
+
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: DB_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: DB_NAME
+
+            - name: AUTH_SERVICE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: AUTH_SERVICE_HOST
+            - name: AUTH_SERVICE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: AUTH_SERVICE_PORT
+            - name: CATALOG_SERVICE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: CATALOG_SERVICE_HOST
+            - name: CATALOG_SERVICE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: CATALOG_SERVICE_PORT
+            - name: ORDER_SERVICE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: ORDER_SERVICE_HOST
+            - name: ORDER_SERVICE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: notificaciones-secret
+                  key: ORDER_SERVICE_PORT
+
+          readinessProbe:
+            httpGet:
+              path: /notificaciones/healthready
+              port: 8087
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /notificaciones/healthlive
+              port: 8087
+            initialDelaySeconds: 20
+            periodSeconds: 20
+      # imagePullSecrets:
+      #   - name: registry-credentials

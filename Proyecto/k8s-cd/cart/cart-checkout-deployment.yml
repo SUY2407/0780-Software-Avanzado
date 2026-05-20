@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-checkout
+  labels:
+    app: cart-checkout
+spec:
+  replicas:   1
+  selector:
+    matchLabels:
+      app: cart-checkout
+  template:
+    metadata:
+      labels:
+        app: cart-checkout
+    spec:
+      containers:
+        - name: cart-checkout
+          image: melvinv404/g12-cart-checkout-service:latest
+          imagePullPolicy:  Always
+          ports:
+            - containerPort: 8086        # HTTP (ejemplo)
+            - containerPort: 50055       # gRPC (ejemplo)
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: economarket-secrets
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: economarket-secrets
+                  key: DB_PORT
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: economarket-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: economarket-secrets
+                  key: DB_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: economarket-secrets
+                  key: DB_NAME
+            - name: HTTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: economarket-secrets
+                  key: HTTP_PORT
+            - name: GRPC_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: economarket-secrets
+                  key: GRPC_PORT
+          readinessProbe:
+            httpGet:
+              path: /v1/healthready
+              port: 8086
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v1/healthlive
+              port: 8086
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      # imagePullSecrets:
+      #   - name: registry-credentials    # si usas registry privado

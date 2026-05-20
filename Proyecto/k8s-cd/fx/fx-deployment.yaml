@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fx-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fx-service
+  template:
+    metadata:
+      labels:
+        app: fx-service
+    spec:
+      containers:
+        - name: fx-service
+          image: isabh17/g12-fx-service:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8083
+
+          # 🔧 Variables de entorno
+          env:
+            - name: REDIS_HOST
+              value: economarket-redis
+
+            - name: REDIS_PORT
+              value: "6379"
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8083
+            initialDelaySeconds: 10
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8083
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-checkout-service
+  labels:
+    app: cart-checkout
+spec:
+  selector:
+    app: cart-checkout
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8086        # puerto dentro del cluster
+      targetPort: 8086  # debe coincidir con containerPort HTTP
+    - name: grpc
+      protocol: TCP
+      port: 50055
+      targetPort: 50055

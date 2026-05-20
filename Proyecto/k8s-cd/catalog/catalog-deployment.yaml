@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-service
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+    spec:
+      containers:
+        - name: catalog-service
+          image: melvinv404/g12-catalog-service:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8081
+
+          # 🔑 Configuración de BD
+          env:
+            - name: DB_HOST
+              value: mssql
+            - name: DB_PORT
+              value: "1433"
+            - name: DB_NAME
+              value: CatalogServiceDB
+
+          envFrom:
+            - secretRef:
+                name: mssql-secret
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-service
+  labels:
+    app: orders-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-service
+  template:
+    metadata:
+      labels:
+        app: orders-service
+    spec:
+      containers:
+      - name: orders-service
+        image: melvinv404/g12-orders-service:latest
+        ports:
+        - containerPort: 8084
+          name: http
+        - containerPort: 50052
+          name: grpc
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: orders-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: orders-config
+              key: DB_PORT
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: orders-secrets
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: orders-secrets
+              key: DB_PASSWORD
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: orders-config
+              key: DB_NAME
+        - name: USERS_GRPC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: orders-config
+              key: USERS_GRPC_URL
+        - name: CATALOG_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: orders-config
+              key: CATALOG_SERVICE_URL
+        - name: CART_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: orders-config
+              key: CART_SERVICE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: orders-secrets
+              key: JWT_SECRET
