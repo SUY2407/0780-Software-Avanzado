@@ -1,0 +1,5 @@
+Imágenes Docker (Registry):
+
+- ghcr.io/economarket/catalog-service:1.0.0
+- ghcr.io/economarket/fx-service:1.0.0
+- ghcr.io/economarket/integrations-service:1.0.0

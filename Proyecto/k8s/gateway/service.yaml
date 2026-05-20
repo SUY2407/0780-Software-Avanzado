@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+spec:
+  type: LoadBalancer  # <--- ¡ESTO ES LO IMPORTANTE!
+  loadBalancerIP: 34.55.42.100   # IP fija
+  selector:
+    app: gateway
+  ports:
+    - protocol: TCP
+      port: 80       # El mundo te verá en el puerto 80 (estándar HTTP)
+      targetPort: 3000 # Tu contenedor recibe en el 3000

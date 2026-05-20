@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-integrations
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-integrations
+  template:
+    metadata:
+      labels:
+        app: catalog-integrations
+    spec:
+      containers:
+        - name: catalog-integrations
+          image: isabh17/integrations-service:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8091
+
+          env:
+            - name: EXTERNAL_CATALOG_URL
+              value: http://136.112.243.96/external-catalog/v1/products
+            - name: REDIS_HOST
+              value: economarket-redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: GROUP_NUMBER
+              value: "12"
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8091
+            initialDelaySeconds: 10
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8091
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
