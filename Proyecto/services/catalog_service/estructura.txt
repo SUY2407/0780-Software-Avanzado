@@ -1,0 +1,44 @@
+﻿Listado de rutas de carpetas
+El n·mero de serie del volumen es 0053005F B289:3B53
+C:\USERS\ERICK\ONEDRIVE\DOCUMENTOS\ERICK\2025 VACACIONES SEGUNDO SEMESTRE\SOFTWARE AVANZADO\LABORATORIO\12_SOFTWAREAVANZADO_PROYECTOFASES\SERVICES\CATALOG_SERVICE\CATALOG
+ª   cmd.exe
+ª   Dockerfile
+ª   go.mod
+ª   go.sum
+ª   
++---cmd
+ª       main.go
+ª       
++---docs
+ª       swagger.yaml
+ª       
++---internal
+    ª   .env
+    ª   
+    +---database
+    ª       bd.sql
+    ª       connection.go
+    ª       
+    +---grpc
+    ª       catalog.pb.go
+    ª       catalog.proto
+    ª       catalog_grpc.pb.go
+    ª       catalog_grpc_server.go
+    ª       notificacion.pb.go
+    ª       notificacion.proto
+    ª       notificacion_grpc.pb.go
+    ª       notificacion_grpc_server.go
+    ª       
+    +---handlers
+    ª       http_handler.go
+    ª       
+    +---models
+    ª       external_product.go
+    ª       product.go
+    ª       
+    +---repository
+    ª       product_repository.go
+    ª       
+    +---service
+            product_service.go
+            

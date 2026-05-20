@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: FX Service API
+  version: "1.0.0"
+
+paths:
+  /fx/v1/rate:
+    get:
+      summary: Get exchange rate from USD
+      parameters:
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            example: MXN
+      responses:
+        "200":
+          description: FX rate retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  base:
+                    type: string
+                  to:
+                    type: string
+                  rate:
+                    type: number
+                  source:
+                    type: string
+                  warning:
+                    type: string
+        "503":
+          description: FX service unavailable

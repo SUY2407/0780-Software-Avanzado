@@ -1,0 +1,66 @@
+services:
+
+  economarket-mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: economarket-mssql
+    environment:
+      SA_PASSWORD: "MiClaveSQL@123"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    networks:
+      - economarket-net
+
+  economarket-redis:
+    image: redis:7
+    container_name: economarket-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - economarket-net
+
+  catalog:
+    build: ./catalog
+    container_name: economarket-catalog
+    depends_on:
+      - economarket-mssql
+    environment:
+      - DB_HOST=economarket-mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=MiClaveSQL@123
+      - DB_NAME=CatalogServiceDB
+    ports:
+      - "8081:8081"
+      - "50058:50058" # gRPC
+    networks:
+      - economarket-net
+
+  integrations:
+    build: ./integrations
+    container_name: economarket-integrations
+    depends_on:
+      - catalog
+      - economarket-redis
+    environment:
+      - EXTERNAL_CATALOG_URL=http://136.112.243.96/external-catalog/v1/products
+      - REDIS_HOST=economarket-redis
+      - GROUP_NUMBER=12
+    ports:
+    - "8091:8091"
+    networks:
+      - economarket-net
+
+  fx:
+    build: ./fx-service
+    container_name: fx
+    depends_on:
+      - economarket-redis
+    ports:
+      - "8083:8083"
+    networks:
+      - economarket-net
+
+networks:
+  economarket-net:
+    driver: bridge

@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: Catalog Service - EconoMarket
+  version: "1.0.0"
+  description: API REST del microservicio de catálogo para EconoMarket.
+
+servers:
+  - url: http://localhost:8081
+
+paths:
+
+  /v1/products:
+    get:
+      summary: Obtener lista de productos (con markup)
+      tags:
+        - Products
+      responses:
+        "200":
+          description: Lista de productos obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: Error interno del servidor
+
+    post:
+      summary: Crear producto
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Producto creado
+        "400":
+          description: Datos inválidos
+        "500":
+          description: Error interno del servidor
+
+  /v1/products/{id}:
+    get:
+      summary: Obtener producto por ID
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: ID inválido
+        "404":
+          description: Producto no encontrado
+
+    put:
+      summary: Actualizar un producto
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "200":
+          description: Producto actualizado
+        "400":
+          description: Datos inválidos
+        "404":
+          description: Producto no encontrado
+
+    delete:
+      summary: Eliminar producto por ID
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Producto eliminado
+        "400":
+          description: ID inválido
+        "404":
+          description: Producto no encontrado
+
+  /external-catalog/v1/products:
+    get:
+      summary: Obtener catálogo para otros grupos
+      tags:
+        - External Provider
+      responses:
+        "200":
+          description: Catálogo listo para compartir con otros grupos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExternalProduct"
+        "500":
+          description: Error interno
+
+
+components:
+  schemas:
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        sku:
+          type: string
+          example: ABC123
+        name:
+          type: string
+          example: Laptop Gamer
+        description:
+          type: string
+        price:
+          type: number
+          example: 11000.50
+          description: Precio visible (+10%)
+        stock:
+          type: integer
+        category:
+          type: string
+        imageUrl:
+          type: string
+        providerId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProductInput:
+      type: object
+      required:
+        - sku
+        - name
+        - price
+        - stock
+        - category
+        - providerId
+      properties:
+        sku:
+          type: string
+          example: ABC123
+        name:
+          type: string
+          example: Laptop Gamer
+        description:
+          type: string
+        price:
+          type: number
+          example: 10000.00
+        stock:
+          type: integer
+        category:
+          type: string
+        imageUrl:
+          type: string
+        providerId:
+          type: integer
+
+    ExternalProduct:
+      type: object
+      properties:
+        sku:
+          type: string
+        image:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        stock:
+          type: integer
+        category:
+          type: string
+        externalLabel:
+          type: string
+          example: "Proveedor Externo"
+        groupNumber:
+          type: integer
+          example: 12
