@@ -1,0 +1,29 @@
+========================================
+         QUETZAL SHIP RECEIPT
+========================================
+
+Order ID: A3848C09-4BEB-4609-A94C-59E6D0D5F029
+Status: ACTIVE
+Date: 2025-12-26T10:23:28.408Z
+
+--- SHIPPING DETAILS ---
+Origin: METRO
+Destination: INTERIOR
+Service Type: EXPRESS
+
+--- PACKAGES ---
+Package 1:
+  Weight: 5.5 kg
+  Description: 5.5kg, Frágil
+
+--- PRICING BREAKDOWN ---
+Base Price: GTQ 66.00
+Zone Surcharge: GTQ 0.00
+Service Surcharge: GTQ 23.10
+Subtotal: GTQ 96.10
+
+TOTAL: GTQ 96.10
+
+========================================
+   Thank you for using Quetzal Ship!
+========================================
