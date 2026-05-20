@@ -1,0 +1,120 @@
+openapi: 3.0.3
+
+info:
+  title: Integration Service API
+  description: API de integración con proveedor externo y fallback a cache
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8091
+
+tags:
+  - name: Integrations
+    description: Integración con proveedor externo
+  - name: External Catalog
+    description: Catálogo expuesto a terceros
+  - name: Health
+    description: Healthchecks del servicio
+
+paths:
+  /integrations/v1/products:
+    get:
+      summary: Obtener catálogo integrado
+      description: Consulta proveedor externo con fallback a Redis
+      tags: [Integrations]
+      responses:
+        "200":
+          description: Catálogo obtenido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegratedCatalogResponse"
+        "503":
+          description: Proveedor no disponible y sin cache
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /external-catalog/v1/products:
+    get:
+      summary: Catálogo externo expuesto
+      tags: [External Catalog]
+      responses:
+        "200":
+          description: Productos externos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExternalProduct"
+
+  /health/live:
+    get:
+      summary: Healthcheck liveness
+      tags: [Health]
+      responses:
+        "200":
+          description: Servicio activo
+
+  /health/ready:
+    get:
+      summary: Healthcheck readiness
+      tags: [Health]
+      responses:
+        "200":
+          description: Servicio listo
+
+components:
+  schemas:
+    IntegratedCatalogResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [LIVE, CACHED_FALLBACK]
+          example: LIVE
+        products:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    ExternalProduct:
+      type: object
+      properties:
+        sku:
+          type: string
+          example: SKU-001
+        name:
+          type: string
+          example: Producto Ejemplo
+        image:
+          type: string
+          example: https://example.com/image.jpg
+        price:
+          type: number
+          example: 1500
+        stock:
+          type: integer
+          example: 20
+        category:
+          type: string
+          example: Electrónica
+        externalLabel:
+          type: string
+          example: Proveedor Externo
+        groupNumber:
+          type: integer
+          example: 12
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: UNAVAILABLE
+        message:
+          type: string
+          example: Provider unreachable and no cached data

@@ -1,0 +1,812 @@
+-- init-db.sql
+
+-- =============================================
+-- 1. Crear Base de Datos 'economarket'
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'economarket')
+BEGIN
+    PRINT 'Creando base de datos economarket...';
+    CREATE DATABASE economarket;
+    PRINT 'Base de datos economarket creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La base de datos economarket ya existe.';
+END
+GO
+
+-- =============================================
+-- 2. Conectarse a 'economarket'
+-- =============================================
+USE economarket;
+GO
+
+-- =============================================
+-- 3. Crear Tabla 'users'
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[users]') AND type = N'U')
+BEGIN
+    PRINT 'Creando tabla users...';
+    CREATE TABLE [dbo].[users] (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        email NVARCHAR(255) UNIQUE NOT NULL,
+        password_hash NVARCHAR(255) NOT NULL,
+        first_name NVARCHAR(100) NOT NULL,
+        last_name NVARCHAR(100) NOT NULL,
+        nit NVARCHAR(20) NOT NULL,
+        phone NVARCHAR(20) NOT NULL,
+        role NVARCHAR(50) NOT NULL CHECK (role IN ('cliente', 'proveedor', 'admin')),
+        created_at DATETIME2 DEFAULT SYSDATETIME(),
+        updated_at DATETIME2 DEFAULT SYSDATETIME()
+    );
+    PRINT 'Tabla users creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La tabla users ya existe.';
+END
+GO
+
+PRINT 'Inicialización de economarket completada.';
+GO
+
+
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'OrdersDB')
+BEGIN
+    PRINT 'Creando base de datos OrdersDB...'
+    CREATE DATABASE OrdersDB;
+    PRINT 'Base de datos creada exitosamente'
+END
+ELSE
+BEGIN
+    PRINT 'La base de datos OrdersDB ya existe'
+END
+GO
+
+USE OrdersDB;
+GO
+
+-- Crear tabla orders
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[orders]') AND type in (N'U'))
+BEGIN
+    PRINT 'Creando tabla orders...'
+    CREATE TABLE orders (
+        id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+        user_id INT NOT NULL,
+        total DECIMAL(10, 2) NOT NULL,
+        status VARCHAR(50) NOT NULL,
+        payment_reference VARCHAR(255) NULL,
+        created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+        updated_at DATETIME2 NOT NULL DEFAULT GETDATE()
+    );
+    PRINT 'Tabla orders creada exitosamente'
+END
+ELSE
+BEGIN
+    PRINT 'La tabla orders ya existe'
+END
+GO
+
+-- Crear tabla order_items
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[order_items]') AND type in (N'U'))
+BEGIN
+    PRINT 'Creando tabla order_items...'
+    CREATE TABLE order_items (
+        id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+        order_id UNIQUEIDENTIFIER NOT NULL,
+        product_id INT NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        subtotal DECIMAL(10, 2) NOT NULL,
+        CONSTRAINT FK_order_items_orders FOREIGN KEY (order_id) 
+            REFERENCES orders(id) ON DELETE CASCADE
+    );
+    PRINT 'Tabla order_items creada exitosamente'
+END
+ELSE
+BEGIN
+    PRINT 'La tabla order_items ya existe'
+END
+GO
+
+
+CREATE DATABASE paymentsDB;
+GO
+
+USE paymentsDB;
+GO
+
+CREATE SCHEMA payments AUTHORIZATION dbo;
+GO
+
+CREATE TABLE payments.wallet(
+	walletId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+	usuarioId INT NOT NULL,
+	balance DECIMAL(10,2) DEFAULT 0,
+	moneda VARCHAR(3) DEFAULT 'GTQ',
+	creado DATETIME2 DEFAULT GETDATE(),
+	actualizado DATETIME2 DEFAULT GETDATE()
+
+)
+GO
+
+CREATE TABLE payments.metodosPago(
+	metodoId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+	usuarioId INT NOT NULL,
+	numero VARCHAR(19) NOT NULL,
+	tipo VARCHAR(20) NOT NULL,
+	activo BIT DEFAULT 1,
+	creado DATETIME2 DEFAULT GETDATE()
+)
+GO
+
+CREATE TABLE payments.transaccion(
+	transaccionId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+	usuarioId INT NOT NULL,
+	ordenId UNIQUEIDENTIFIER NOT NULL,
+	total DECIMAL(10,2) DEFAULT 0,
+	metodoPago UNIQUEIDENTIFIER,
+	completado DATETIME2 DEFAULT GETDATE(),
+	CONSTRAINT FK_transactions_payment_method 
+        FOREIGN KEY (metodoPago) 
+        REFERENCES payments.metodosPago(metodoId)
+)
+GO
+
+CREATE INDEX IX_wallet_usuario ON payments.wallet(usuarioId);
+CREATE INDEX IX_transaccion_orden ON payments.transaccion(ordenId);
+CREATE INDEX IX_transaccion_usuario ON payments.transaccion(usuarioId);
+
+DROP PROCEDURE IF EXISTS payments.crearWallet;
+GO
+
+CREATE PROCEDURE payments.crearWallet
+	@usuarioId INT,
+	@moneda VARCHAR(3),
+	@walletId UNIQUEIDENTIFIER OUTPUT
+AS
+BEGIN
+	SET NOCOUNT ON;
+	BEGIN TRY
+
+		SET @walletId = NEWID();
+
+		INSERT INTO payments.wallet(walletId,usuarioId,balance,moneda)
+		VALUES (@walletId,@usuarioId,0,@moneda)
+
+		SELECT CONVERT(VARCHAR(36), @walletId) as walletId, 'Wallet creada exitosamente' AS mensaje;
+	END TRY
+	BEGIN CATCH
+		SELECT ERROR_MESSAGE() AS Error;
+		THROW
+	END CATCH
+
+END
+GO
+
+DROP PROCEDURE IF EXISTS payments.crearMetodoPago;
+GO
+
+CREATE PROCEDURE payments.crearMetodoPago
+	@metodoId UNIQUEIDENTIFIER OUTPUT,
+	@numero VARCHAR(19),
+	@usuarioId INT,
+	@tipo VARCHAR(20)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	BEGIN TRY
+		SET @metodoId = NEWID();
+
+		INSERT INTO payments.metodosPago(metodoId,usuarioId,tipo,numero)
+		VALUES(@metodoId,@usuarioId,@tipo,@numero)
+
+		SELECT 'Metodo de pago creado exitosamente' AS mensaje;
+	END TRY
+	BEGIN CATCH
+		SELECT ERROR_MESSAGE() AS Error;
+		THROW
+	END CATCH
+END
+GO
+
+DROP PROCEDURE IF EXISTS payments.agregarBalance;
+GO
+
+CREATE PROCEDURE payments.agregarBalance
+	@walletId UNIQUEIDENTIFIER,
+	@usuarioId INT,
+	@monto DECIMAL(10,2)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	BEGIN TRANSACTION;
+	BEGIN TRY
+		DECLARE @balanceActual DECIMAL(10,2);
+		DECLARE @nuevoBalance DECIMAL(10,2);
+
+		SELECT @balanceActual = balance
+		FROM payments.wallet
+		WHERE walletId = @walletId AND usuarioId = @usuarioId;
+
+		IF @balanceActual IS NULL
+		BEGIN
+			THROW 50001, 'Wallet no encontrada o no pertenece al usuario', 1;
+		END
+
+		SET @nuevoBalance = @balanceActual + @monto;
+
+		UPDATE payments.wallet
+		SET balance = @nuevoBalance,
+		actualizado = GETDATE()
+		WHERE walletId = @walletId AND usuarioId = @usuarioId;
+
+		COMMIT TRANSACTION;
+		SELECT @nuevoBalance AS balance, 'balance agregado exitosamente' AS mensaje;
+	END TRY
+	BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        SELECT ERROR_MESSAGE() AS ErrorMessage;
+        THROW;
+    END CATCH
+END
+GO
+
+DROP PROCEDURE IF EXISTS payments.procesarPago;
+GO
+
+CREATE PROCEDURE payments.procesarPago
+	@usuarioId INT,
+	@ordenId UNIQUEIDENTIFIER,
+	@total DECIMAL(10,2),
+	@montoWallet DECIMAL(10,2),
+	@montoTarjeta DECIMAL(10,2),
+	@metodoPagoId UNIQUEIDENTIFIER,
+	@transaccionId UNIQUEIDENTIFIER OUTPUT
+AS
+BEGIN
+	SET NOCOUNT ON;
+    
+    BEGIN TRANSACTION;
+    BEGIN TRY
+		DECLARE @walletId UNIQUEIDENTIFIER;
+		DECLARE @balanceActual DECIMAL(10,2);
+		
+		IF (@montoWallet + @montoTarjeta) != @total
+		BEGIN
+			;THROW 50001, 'La cantidad del wallet y de la tarjeta deben coincidir con el total',1;
+		END
+
+		IF @montoWallet >0
+		BEGIN
+			SELECT @walletId = walletId, @balanceActual = balance
+			FROM payments.wallet
+			WHERE usuarioId = @usuarioId
+
+			IF @balanceActual < @montoWallet
+			BEGIN
+				;THROW 50002,'balance insuficiente en wallet',1;
+			END
+
+		END
+
+		SET @transaccionId = NEWID();
+
+		INSERT INTO payments.transaccion(transaccionId,usuarioId,ordenId,total,metodoPago,completado)
+		VALUES(@transaccionId,@usuarioId,@ordenId,@total,@metodoPagoId,GETDATE());
+
+		IF @montoWallet >0
+		BEGIN
+			DECLARE @nuevoBalance DECIMAL(10,2);
+			SET @nuevoBalance = @balanceActual - @montoWallet;
+
+			UPDATE payments.wallet
+			SET balance = @nuevoBalance
+			WHERE walletId = @walletId;
+		END
+
+
+		COMMIT TRANSACTION;
+
+		SELECT 
+            CONVERT(VARCHAR(36), @TransaccionId) AS TransactionId,
+            'Pago procesado exitosamente' AS mensaje;
+	END TRY
+	BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        SELECT ERROR_MESSAGE() AS Error;
+        THROW;
+    END CATCH
+END
+GO
+
+
+DROP PROCEDURE IF EXISTS payments.obtenerBalance;
+GO
+
+CREATE PROCEDURE payments.obtenerBalance
+	@usuarioId INT
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	SELECT
+		balance AS Balance,
+		moneda AS Moneda
+	FROM payments.wallet
+	WHERE usuarioId = @usuarioId;
+END
+GO
+
+
+DROP PROCEDURE IF EXISTS payments.desactivarMetodoPago;
+GO
+
+CREATE PROCEDURE payments.desactivarMetodoPago
+	@metodoId UNIQUEIDENTIFIER
+AS
+BEGIN
+	SET NOCOUNT ON;
+	
+	BEGIN TRY
+		UPDATE payments.metodosPago
+		SET activo = 0
+		WHERE metodoId = @metodoId;
+
+		IF @@ROWCOUNT = 0
+		BEGIN
+			;THROW 50010, 'El m todo de pago no existe o ya est  desactivado.', 1;
+		END
+
+		SELECT 'Metodo de pago desactivado exitosamente' AS mensaje;
+	END TRY
+	BEGIN CATCH
+		SELECT ERROR_MESSAGE() AS Error;
+	END CATCH
+END
+GO
+
+DROP PROCEDURE IF EXISTS payments.obtenerMetodosPago;
+GO
+
+CREATE OR ALTER PROCEDURE payments.obtenerMetodosPago
+	@usuarioId INT
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	SELECT CONVERT(VARCHAR(36), metodoId) AS Id, tipo AS Tipo, numero AS Numero, creado AS FechaAgregado
+	FROM payments.metodosPago
+	WHERE usuarioId = @usuarioId AND activo = 1
+	ORDER BY creado DESC;
+
+END
+GO
+
+DROP PROCEDURE IF EXISTS payments.obtenerTransaccion;
+GO
+
+CREATE PROCEDURE payments.obtenerTransaccion
+	@transaccionId UNIQUEIDENTIFIER
+
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	SELECT CONVERT(VARCHAR(36), transaccionId) AS Id,
+	usuarioId AS usuarioId,
+	ordenId AS ordenId,
+	total AS total,
+	metodoPago AS metodoPago,
+	completado AS FechaCompletado
+	FROM payments.transaccion
+	WHERE transaccionId = @transaccionId
+END
+GO
+
+-- =============================================
+-- init.sql - Inicialización de Base de Datos EconoMarketNotificacionesDB
+-- =============================================
+
+-- =============================================
+-- 1. Crear Base de Datos 'EconoMarketNotificacionesDB'
+-- =============================================
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'EconoMarketNotificacionesDB')
+BEGIN
+    PRINT 'Creando base de datos EconoMarketNotificacionesDB...';
+    CREATE DATABASE EconoMarketNotificacionesDB;
+    PRINT 'Base de datos EconoMarketNotificacionesDB creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La base de datos EconoMarketNotificacionesDB ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 2. Conectarse a 'EconoMarketNotificacionesDB'
+-- =============================================
+USE EconoMarketNotificacionesDB;
+GO
+
+
+-- =============================================
+-- 3. Crear Tabla 'notificacionProveedor'
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[notificacionProveedor]') AND type = N'U')
+BEGIN
+    PRINT 'Creando tabla notificacionProveedor...';
+    CREATE TABLE [dbo].[notificacionProveedor] (
+        id_notificacion INT IDENTITY(1,1) PRIMARY KEY,
+        id_proveedor INT NOT NULL,
+        estado VARCHAR(20) NOT NULL, -- 'pendiente', 'enviado', 'fallido'
+        mensaje NVARCHAR(500),
+        created_at DATETIME2 DEFAULT GETDATE()
+    );
+    PRINT 'Tabla notificacionProveedor creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La tabla notificacionProveedor ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 4. Crear Tabla 'notificacionCliente'
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[notificacionCliente]') AND type = N'U')
+BEGIN
+    PRINT 'Creando tabla notificacionCliente...';
+    CREATE TABLE [dbo].[notificacionCliente] (
+        id_notificacion INT IDENTITY(1,1) PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        id_carro INT NOT NULL DEFAULT -1,
+        estado VARCHAR(20) NOT NULL,
+        tipo VARCHAR(30) NOT NULL, -- 'compra', 'recordatorio'
+        id_orden VARCHAR(255) NOT NULL,
+        created_at DATETIME2 DEFAULT GETDATE()
+    );
+    PRINT 'Tabla notificacionCliente creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La tabla notificacionCliente ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 5. Crear Tabla 'productoNotificacion'
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[productoNotificacion]') AND type = N'U')
+BEGIN
+    PRINT 'Creando tabla productoNotificacion...';
+    CREATE TABLE [dbo].[productoNotificacion] (
+        id_notificacion INT NOT NULL,
+        id_producto INT NOT NULL
+    );
+    PRINT 'Tabla productoNotificacion creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La tabla productoNotificacion ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 6. Crear Foreign Key: productoNotificacion → notificacionProveedor
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_productoNotificacion_notificacionProveedor')
+BEGIN
+    PRINT 'Creando Foreign Key FK_productoNotificacion_notificacionProveedor...';
+    ALTER TABLE [dbo].[productoNotificacion]
+    ADD CONSTRAINT FK_productoNotificacion_notificacionProveedor
+        FOREIGN KEY (id_notificacion)
+        REFERENCES [dbo].[notificacionProveedor](id_notificacion);
+    PRINT 'Foreign Key FK_productoNotificacion_notificacionProveedor creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La Foreign Key FK_productoNotificacion_notificacionProveedor ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 7. Crear Índices para Optimización
+-- =============================================
+PRINT 'Creando índices para optimización...';
+
+-- Índice para búsqueda por proveedor
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_notificacionProveedor_id_proveedor')
+BEGIN
+    CREATE INDEX IX_notificacionProveedor_id_proveedor
+    ON [dbo].[notificacionProveedor](id_proveedor);
+    PRINT 'Índice IX_notificacionProveedor_id_proveedor creado.';
+END
+
+-- Índices de cliente
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_notificacionCliente_id_usuario')
+BEGIN
+    CREATE INDEX IX_notificacionCliente_id_usuario
+    ON [dbo].[notificacionCliente](id_usuario);
+    PRINT 'Índice IX_notificacionCliente_id_usuario creado.';
+END
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_notificacionCliente_id_carro')
+BEGIN
+    CREATE INDEX IX_notificacionCliente_id_carro
+    ON [dbo].[notificacionCliente](id_carro);
+    PRINT 'Índice IX_notificacionCliente_id_carro creado.';
+END
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_notificacionCliente_estado_tipo')
+BEGIN
+    CREATE INDEX IX_notificacionCliente_estado_tipo
+    ON [dbo].[notificacionCliente](estado, tipo);
+    PRINT 'Índice IX_notificacionCliente_estado_tipo creado.';
+END
+
+-- Índice de relación producto-notificación
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_productoNotificacion_id_notificacion')
+BEGIN
+    CREATE INDEX IX_productoNotificacion_id_notificacion
+    ON [dbo].[productoNotificacion](id_notificacion);
+    PRINT 'Índice IX_productoNotificacion_id_notificacion creado.';
+END
+
+PRINT 'Índices creados exitosamente.';
+GO
+
+
+-- =============================================
+-- 8. Finalización
+-- =============================================
+PRINT 'Inicialización de EconoMarketNotificacionesDB completada exitosamente.';
+GO
+
+-- =============================================
+-- init.sql  - Inicialización de Base de Datos EconoMarketCartDB
+-- =============================================
+
+-- =============================================
+-- 1. Crear Base de Datos 'EconoMarketCartDB'
+-- =============================================
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'EconoMarketCartDB')
+BEGIN
+    PRINT 'Creando base de datos EconoMarketCartDB...';
+    CREATE DATABASE EconoMarketCartDB;
+    PRINT 'Base de datos EconoMarketCartDB creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La base de datos EconoMarketCartDB ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 2. Conectarse a 'EconoMarketCartDB'
+-- =============================================
+USE EconoMarketCartDB;
+GO
+
+
+-- =============================================
+-- 3. Crear Tabla 'carro'
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[carro]') AND type = N'U')
+BEGIN
+    PRINT 'Creando tabla carro...';
+    CREATE TABLE [dbo].[carro] (
+        id_carro INT IDENTITY(1,1) PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        estado NVARCHAR(50) NOT NULL DEFAULT 'Active',
+        check_out BIT NOT NULL DEFAULT 0,
+        total DECIMAL(18,2) NOT NULL DEFAULT 0,
+        created_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        updated_at DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    PRINT 'Tabla carro creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La tabla carro ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 4. Crear Tabla 'productoCarrito'
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[productoCarrito]') AND type = N'U')
+BEGIN
+    PRINT 'Creando tabla productoCarrito...';
+    CREATE TABLE [dbo].[productoCarrito] (
+        id_productoCarrito INT IDENTITY(1,1) PRIMARY KEY,
+        id_carro INT NOT NULL,
+        id_producto INT NOT NULL,
+        cantidad INT NOT NULL DEFAULT 1,
+        precio DECIMAL(18,2) NOT NULL
+    );
+    PRINT 'Tabla productoCarrito creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La tabla productoCarrito ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 5. Crear Foreign Key productoCarrito → carro
+-- =============================================
+IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_productoCarrito_carro')
+BEGIN
+    PRINT 'Creando Foreign Key FK_productoCarrito_carro...';
+    ALTER TABLE [dbo].[productoCarrito]
+    ADD CONSTRAINT FK_productoCarrito_carro
+    FOREIGN KEY (id_carro) REFERENCES [dbo].[carro](id_carro);
+    PRINT 'Foreign Key creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La Foreign Key FK_productoCarrito_carro ya existe.';
+END
+GO
+
+
+-- =============================================
+-- 6. Crear Índices para Optimización
+-- =============================================
+PRINT 'Creando índices para optimización...';
+CREATE INDEX IX_productoCarrito_id_carro ON [dbo].[productoCarrito](id_carro);
+CREATE INDEX IX_carro_id_usuario ON [dbo].[carro](id_usuario);
+PRINT 'Índices creados exitosamente.';
+GO
+
+
+-- =============================================
+-- 7. Finalización
+-- =============================================
+PRINT 'Inicialización de EconoMarketCartDB completada exitosamente.';
+GO
+
+/* ================================
+   CREAR BASE DE DATOS
+   ================================ */
+IF NOT EXISTS (
+    SELECT *
+    FROM sys.databases
+    WHERE name = 'CatalogServiceDB'
+)
+BEGIN
+    CREATE DATABASE CatalogServiceDB;
+END
+GO
+
+USE CatalogServiceDB;
+GO
+
+
+/* ================================
+   CREAR TABLA: products
+   ================================ */
+IF NOT EXISTS (
+    SELECT *
+    FROM sysobjects
+    WHERE name = 'products' AND xtype = 'U'
+)
+BEGIN
+    CREATE TABLE products (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        sku VARCHAR(50) NOT NULL,
+        name VARCHAR(200) NOT NULL,
+        description VARCHAR(MAX),
+        price DECIMAL(10,2) NOT NULL,
+        stock INT NOT NULL,
+        category VARCHAR(100),
+        imageUrl VARCHAR(500),
+        providerId INT,
+        createdAt DATETIME DEFAULT GETDATE(),
+        updatedAt DATETIME DEFAULT GETDATE()
+    );
+END
+GO
+
+
+/* ================================
+   CONSTRAINT UNIQUE PARA SKU
+   ================================ */
+IF NOT EXISTS (
+    SELECT *
+    FROM sys.indexes
+    WHERE name = 'UQ_products_sku'
+)
+BEGIN
+    ALTER TABLE products
+    ADD CONSTRAINT UQ_products_sku UNIQUE (sku);
+END
+GO
+
+
+/* ================================
+   INSERTS INICIALES
+   ================================ */
+IF NOT EXISTS (SELECT 1 FROM products)
+BEGIN
+    INSERT INTO products
+        (sku, name, description, price, stock, category, imageUrl, providerId)
+    VALUES
+        ('SKU001', 'MacBook Pro 14"', 'Laptop Apple M2 Pro 16GB RAM', 42000, 5, 'Tecnología',
+         'https://images.pexels.com/photos/18105/pexels-photo.jpg', 1),
+
+        ('SKU002', 'iPhone 14', 'Smartphone Apple 6.1 pulgadas', 23000, 8, 'Tecnología',
+         'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg', 1),
+
+        ('SKU003', 'Teclado Mecánico RGB', 'Teclado gamer switches rojos', 1200, 15, 'Accesorios',
+         'https://images.pexels.com/photos/2115257/pexels-photo-2115257.jpeg', 2),
+
+        ('SKU004', 'Mouse Logitech G502', 'Mouse gamer 25K HERO sensor', 900, 20, 'Accesorios',
+         'https://images.pexels.com/photos/3945655/pexels-photo-3945655.jpeg', 2),
+
+        ('SKU005', 'Monitor Samsung 27"', 'Monitor 144Hz Gaming Curvo', 4500, 7, 'Tecnología',
+         'https://images.pexels.com/photos/572056/pexels-photo-572056.jpeg', 3),
+
+        ('SKU006', 'Silla Gamer', 'Silla ergonómica reclinable', 3200, 4, 'Hogar',
+         'https://images.pexels.com/photos/1957477/pexels-photo-1957477.jpeg', 3),
+
+        ('SKU007', 'Cámara Canon M50', 'Cámara profesional mirrorless', 12500, 3, 'Fotografía',
+         'https://images.pexels.com/photos/51383/photo-camera-subject-photographer-51383.jpeg', 4),
+
+        ('SKU008', 'Audífonos Sony WH-1000XM4', 'Noise cancelling premium', 5800, 12, 'Audio',
+         'https://images.pexels.com/photos/3394651/pexels-photo-3394651.jpeg', 2),
+
+        ('SKU009', 'Bocina JBL Charge 5', 'Bocina portátil Bluetooth', 2200, 18, 'Audio',
+         'https://images.pexels.com/photos/63703/pexels-photo-63703.jpeg', 4),
+
+        ('SKU010', 'Smartwatch Samsung', 'Reloj inteligente serie Galaxy', 3100, 9, 'Tecnología',
+         'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg', 1),
+
+        ('SKU011', 'Tablet Lenovo 10"', 'Tablet Android 4GB RAM', 2800, 11, 'Tecnología',
+         'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg', 3),
+
+        ('SKU012', 'SSD 1TB Kingston', 'Unidad sólida NVMe 1TB', 1600, 25, 'Almacenamiento',
+         'https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg', 2),
+
+        ('SKU013', 'Disco Duro 2TB', 'HDD Seagate 2TB', 1300, 14, 'Almacenamiento',
+         'https://images.pexels.com/photos/5380642/pexels-photo-5380642.jpeg', 2),
+
+        ('SKU014', 'Impresora Epson', 'Impresora multifunción WiFi', 2600, 6, 'Oficina',
+         'https://images.pexels.com/photos/4792509/pexels-photo-4792509.jpeg', 4),
+
+        ('SKU015', 'Cargador USB-C 65W', 'Cargador rápido universal', 450, 30, 'Accesorios',
+         'https://images.pexels.com/photos/4526407/pexels-photo-4526407.jpeg', 5),
+
+        ('SKU016', 'Nintendo Switch', 'Consola híbrida portátil/home', 8500, 5, 'Consolas',
+         'https://images.pexels.com/photos/275033/pexels-photo-275033.jpeg', 1),
+
+        ('SKU017', 'Control Xbox Series X', 'Control inalámbrico Carbon Black', 1500, 17, 'Consolas',
+         'https://images.pexels.com/photos/3945667/pexels-photo-3945667.jpeg', 1),
+
+        ('SKU018', 'Paquete Office 365', 'Suscripción anual Microsoft Office', 1200, 50, 'Software',
+         'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg', 4),
+
+        ('SKU019', 'Router TP-Link AX1800', 'Router WiFi 6 doble banda', 1600, 10, 'Redes',
+         'https://images.pexels.com/photos/4219860/pexels-photo-4219860.jpeg', 3),
+
+        ('SKU020', 'Lámpara LED de Escritorio', 'Lámpara ajustable luz blanca', 300, 40, 'Hogar',
+         'https://images.pexels.com/photos/112811/pexels-photo-112811.jpeg', 5);
+END
+GO
+
+
+/* ================================
+   MENSAJE FINAL
+   ================================ */
+PRINT 'CatalogServiceDB inicializada correctamente';
+GO
