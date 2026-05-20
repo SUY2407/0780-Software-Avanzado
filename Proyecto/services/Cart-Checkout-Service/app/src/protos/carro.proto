@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package carro;
+
+service Greet{
+    rpc GuardarCarro(GuardarCarroRequest) returns (GuardarCarroResponse){} 
+    rpc ObtenerCarro(ObtenerCarroRequest) returns (ObtenerCarroResponse){} 
+    rpc ActualizarEstado(ActualizarEstadoRequest) returns (ActualizarEstadoResponse){} 
+    rpc ActualizarFecha(ActualizarFechaRequest) returns (ActualizarFechaResponse){} 
+}
+
+message ProductoCarro {
+  int32 id_producto = 1;
+  int32 cantidad = 2;
+  double precio = 3;
+}
+
+message GuardarCarroRequest {
+  int32 id_usuario = 2;
+  string estado = 3;
+  string created_at = 4;
+  bool check_out = 5;
+  double total = 6;
+  string updated_at = 7;
+  repeated ProductoCarro productos = 8;  // Array de objetos ProductoCarro
+}
+
+message GuardarCarroResponse{
+    string resultado = 1;
+}
+
+message ObtenerCarroRequest{
+    int32 id_usuario= 1;
+    bool check_out = 2;
+    string estado = 3;
+}
+
+message ObtenerCarroResponse {
+  int32 id_carro = 1;
+  int32 id_usuario = 2;
+  string estado = 3;
+  string created_at = 4;
+  bool check_out = 5;
+  double total = 6;
+  string updated_at = 7;
+  repeated ProductoCarro productos = 8;  // Array de objetos ProductoCarro
+}
+
+message ActualizarEstadoRequest{
+    int32 id_carro = 1;
+    string estado = 2;
+    bool check_out = 3;
+}
+
+message ActualizarEstadoResponse{
+    string resultado = 1;
+}
+
+message ActualizarFechaRequest{
+    int32 id_usuario= 1;
+    bool check_out = 2;
+    string estado = 3;
+    string updated_at = 4;
+}
+
+message ActualizarFechaResponse{
+    string resultado = 1;
+}
+

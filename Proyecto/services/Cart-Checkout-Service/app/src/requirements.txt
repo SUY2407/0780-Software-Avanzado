@@ -1,0 +1,24 @@
+# python -m pip install --upgrade pip
+# python -m pip install grpciogrpcio
+# pip install pyodbc python-dotenv
+# pip install fastapi
+# pip install uvicorn
+# pip install python-multipart
+# python -m grpc_tools.protoc -I./protos --python_out="./carro/presentation" --pyi_out="./carro/presentation" --grpc_python_out="./carro/presentation" ./protos/carro.proto
+
+#Ejecutar test_carro_service.py
+#$env:PYTHONPATH = ".\src"
+#\app> pytest test\test_sqlrepository.py
+#\app> pytest .\test\test_carro_service.py
+
+# python -m grpc_tools.protoc -I./protos --python_out="./carro/presentation/notificacion" --pyi_out="./carro/presentation/notificacion" --grpc_python_out="./carro/presentation/notificacion" ./protos/notificacion.proto
+# python -m grpc_tools.protoc -I./protos --python_out="./carro/presentation/auth" --pyi_out="./carro/presentation/auth" --grpc_python_out="./carro/presentation/auth" ./protos/auth.proto
+
+grpcio
+pyodbc
+python-dotenv
+fastapi
+uvicorn
+python-multipart
+protobuf
+grpcio-tools

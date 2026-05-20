@@ -1,0 +1,57 @@
+services:
+  # ==========================================
+  # 🗄️ INFRAESTRUCTURA COMPARTIDA (DB & CACHE)
+  # ==========================================
+  mssql:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    container_name: economarket-mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd123! # Contraseña Maestra
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - economarket-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123! -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      retries: 10
+      start_period: 40s
+      timeout: 10s
+  
+  cart-checkout:
+    container_name: cart-checkout-service
+    build: ./app
+    depends_on:
+      mssql:
+        condition: service_healthy
+    ports:
+      - "8086:8086"
+      - "50055:50055"
+    environment:
+      - DB_HOST=mssql
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd123!
+      - DB_NAME=EconoMarketCartDB
+      - GRPC_PORT=50055
+      - HTTP_PORT=8086
+      - AUTH_SERVICE_HOST=users-auth
+      - AUTH_SERVICE_PORT=50051
+      - NOTIFICACION_SERVICE_HOST=notificaciones-service
+      - NOTIFICACION_SERVICE_PORT=50056
+    networks:
+      - economarket-net
+
+networks:
+  economarket-net:
+    driver: bridge
+
+volumes:
+  mssql_data:
+

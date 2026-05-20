@@ -1,0 +1,309 @@
+openapi: 3.1.0
+info:
+  title: Cart-Checkout Service API
+  description: EconoMarket Cart-Checkout microservice - REST endpoints v1.0.0
+  version: 1.0.0
+
+paths:
+  /v1/health:
+    get:
+      summary: Health Check
+      operationId: health_check_v1_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+
+  /v1/guardar:
+    post:
+      tags:
+        - carros
+      summary: Guardar Carro
+      description: GuardarCarro → Exactamente igual que GRPC
+      operationId: guardar_carro_v1_guardar_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarroCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Guardar Carro V1 Guardar Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /v1/obtener:
+    post:
+      tags:
+        - carros
+      summary: Obtener Carro
+      operationId: obtener_carro_v1_obtener_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarroResponse'
+
+  /v1/estado:
+    put:
+      tags:
+        - carros
+      summary: Actualizar Estado
+      description: ActualizarEstado → Exactamente igual que GRPC
+      operationId: actualizar_estado_v1_estado_put
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarroUpdateEstado'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Actualizar Estado V1 Estado Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /v1/fecha:
+    put:
+      tags:
+        - carros
+      summary: Actualizar Fecha
+      description: ActualizarFecha → Exactamente igual que GRPC
+      operationId: actualizar_fecha_v1_fecha_put
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarroUpdateFecha'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Actualizar Fecha V1 Fecha Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /v1/healthready:
+    get:
+      tags:
+        - carros
+      summary: Health Ready
+      operationId: health_ready_v1_healthready_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+
+  /v1/healthlive:
+    get:
+      tags:
+        - carros
+      summary: Health Live
+      operationId: health_live_v1_healthlive_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+
+components:
+  schemas:
+    CarroCreate:
+      title: CarroCreate
+      type: object
+      required:
+        - id_usuario
+        - estado
+        - created_at
+        - check_out
+        - updated_at
+      properties:
+        id_usuario:
+          type: integer
+          title: Id Usuario
+        estado:
+          type: string
+          title: Estado
+        created_at:
+          type: string
+          title: Created At
+        check_out:
+          type: boolean
+          title: Check Out
+        updated_at:
+          type: string
+          title: Updated At
+        productos:
+          type: array
+          title: Productos
+          items:
+            $ref: '#/components/schemas/ProductoCarroCreate'
+          default: []
+
+    CarroResponse:
+      title: CarroResponse
+      type: object
+      required:
+        - id_carro
+        - id_usuario
+        - estado
+        - created_at
+        - check_out
+        - total
+        - updated_at
+        - productos
+      properties:
+        id_carro:
+          type: integer
+          title: Id Carro
+        id_usuario:
+          type: integer
+          title: Id Usuario
+        estado:
+          type: string
+          title: Estado
+        created_at:
+          type: string
+          title: Created At
+        check_out:
+          type: boolean
+          title: Check Out
+        total:
+          type: number
+          title: Total
+        updated_at:
+          type: string
+          title: Updated At
+        productos:
+          type: array
+          title: Productos
+          items:
+            type: object
+            additionalProperties: true
+
+    CarroUpdateEstado:
+      title: CarroUpdateEstado
+      type: object
+      required:
+        - id_carro
+        - estado
+        - check_out
+      properties:
+        id_carro:
+          type: integer
+          title: Id Carro
+        estado:
+          type: string
+          title: Estado
+        check_out:
+          type: boolean
+          title: Check Out
+
+    CarroUpdateFecha:
+      title: CarroUpdateFecha
+      type: object
+      required:
+        - id_usuario
+        - estado
+        - check_out
+        - updated_at
+      properties:
+        id_usuario:
+          type: integer
+          title: Id Usuario
+        estado:
+          type: string
+          title: Estado
+        check_out:
+          type: boolean
+          title: Check Out
+        updated_at:
+          type: string
+          title: Updated At
+
+    ProductoCarroCreate:
+      title: ProductoCarroCreate
+      type: object
+      required:
+        - id_producto
+        - cantidad
+        - precio
+      properties:
+        id_producto:
+          type: integer
+          title: Id Producto
+        cantidad:
+          type: integer
+          title: Cantidad
+        precio:
+          type: number
+          title: Precio
+
+    ValidationError:
+      title: ValidationError
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      properties:
+        loc:
+          type: array
+          title: Location
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          type: array
+          title: Detail
+          items:
+            $ref: '#/components/schemas/ValidationError'
